@@ -713,8 +713,10 @@ function FamilyFlowInner() {
       updateNodeData: (id, data) => patch(id, (d) => ({ ...d, ...data })),
       toggleCollapse: (id) => patch(id, (d) => ({ ...d, isCollapsed: !d.isCollapsed })),
       canCollapse: (id) => {
-        // A node can only collapse if it has an incoming (top) connection — it's not a root node
-        return !!q.parentBondOf(id) || q.directParentsOf(id).length > 0;
+        // A node can only collapse if it has at least 2 connections (incoming + outgoing)
+        const incoming = edges.filter((e) => e.target === id).length;
+        const outgoing = edges.filter((e) => e.source === id).length;
+        return incoming + outgoing >= 2;
       },
       getParentInfo: (id) => ({
         hasBondParent: !!q.parentBondOf(id),

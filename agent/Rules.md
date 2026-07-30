@@ -19,6 +19,7 @@ These rules must be strictly followed when assisting with the Purkha project.
    - Write modern React (Functional components, Hooks).
    - Ensure strict TypeScript typing for all props, states, and API responses.
    - Use meaningful variable names and keep components small and focused.
+   - **CRITICAL:** Do NOT use single-letter variable names (like `a`, `e`, `n`, `p`, etc.) anywhere in the codebase. Always use descriptive, meaningful names (e.g., `actions`, `event`, `node`, `person`).
 
 ## Error Handling
 - Use the existing `reportLovableError` utility for capturing boundary errors.

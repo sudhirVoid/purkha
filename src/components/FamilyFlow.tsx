@@ -18,6 +18,12 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 type Kind = "person" | "bond";
 type Gender = "male" | "female" | "other";
@@ -30,6 +36,13 @@ type FamilyNodeData = {
   gender?: Gender;
   media?: MediaItem[];
   marriageDate?: string;
+  address?: string;
+  birthPlace?: string;
+  dob?: string;
+  deathDate?: string;
+  otherDetails?: string;
+  residingAt?: string;
+  isCollapsed?: boolean;
 };
 type FamilyNode = Node<FamilyNodeData>;
 
@@ -46,6 +59,10 @@ type Actions = {
   removeMedia: (id: string, mediaId: string) => void;
   hasPartner: (id: string) => boolean;
   hasParent: (id: string) => boolean;
+  updateNodeData: (id: string, data: Partial<FamilyNodeData>) => void;
+  toggleCollapse: (id: string) => void;
+  getParentInfo: (id: string) => { hasBondParent: boolean; directParents: string[] };
+  getNode: (id: string) => FamilyNode | undefined;
 };
 
 const ActionsContext = createContext<Actions | null>(null);
@@ -71,27 +88,46 @@ function MediaStrip({ nodeId, media }: { nodeId: string; media: MediaItem[] }) {
   return (
     <div className="mt-2 flex flex-wrap gap-1.5 justify-center max-w-[220px]">
       {media.map((m) => (
-        <div key={m.id} className="relative group">
-          {m.kind === "image" && (
-            <img src={m.url} alt={m.name} className="h-10 w-10 rounded-md object-cover border" />
-          )}
-          {m.kind === "video" && (
-            <video src={m.url} className="h-10 w-10 rounded-md object-cover border" muted controls={false} />
-          )}
-          {m.kind === "audio" && (
-            <div className="h-10 w-10 rounded-md border grid place-items-center text-base bg-muted">♪</div>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              a.removeMedia(nodeId, m.id);
-            }}
-            className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-none opacity-0 group-hover:opacity-100 transition"
-            title="Remove"
-          >
-            ×
-          </button>
-        </div>
+        <Dialog key={m.id}>
+          <div className="relative group">
+            <DialogTrigger asChild>
+              <div className="cursor-pointer">
+                {m.kind === "image" && (
+                  <img src={m.url} alt={m.name} className="h-10 w-10 rounded-md object-cover border" />
+                )}
+                {m.kind === "video" && (
+                  <video src={m.url} className="h-10 w-10 rounded-md object-cover border" muted controls={false} />
+                )}
+                {m.kind === "audio" && (
+                  <div className="h-10 w-10 rounded-md border grid place-items-center text-base bg-muted">♪</div>
+                )}
+              </div>
+            </DialogTrigger>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                a.removeMedia(nodeId, m.id);
+              }}
+              className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-none opacity-0 group-hover:opacity-100 transition z-10"
+              title="Remove"
+            >
+              ×
+            </button>
+          </div>
+          <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center bg-black/95 border-none p-4 sm:p-10">
+            <DialogTitle className="sr-only">{m.name}</DialogTitle>
+            <DialogDescription className="sr-only">Media viewer</DialogDescription>
+            {m.kind === "image" && (
+              <img src={m.url} alt={m.name} className="max-w-full max-h-[80vh] object-contain rounded-md" />
+            )}
+            {m.kind === "video" && (
+              <video src={m.url} className="max-w-full max-h-[80vh] rounded-md" controls autoPlay />
+            )}
+            {m.kind === "audio" && (
+              <audio src={m.url} controls className="w-full max-w-md mt-8" autoPlay />
+            )}
+          </DialogContent>
+        </Dialog>
       ))}
     </div>
   );
@@ -123,6 +159,11 @@ function ToolbarBtn({
 function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
   const a = useActions();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const parentInfo = a.getParentInfo(id);
+  const canAddFather = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => a.getNode(pid)?.data.gender === "male");
+  const canAddMother = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => a.getNode(pid)?.data.gender === "female");
+
   return (
     <div className="rounded-xl border bg-card shadow-lg p-2 space-y-2 w-[240px]">
       <input
@@ -145,8 +186,8 @@ function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
         ))}
       </div>
       <div className="grid grid-cols-2 gap-1">
-        <ToolbarBtn onClick={() => a.addParent(id, "Father")}>+ Father</ToolbarBtn>
-        <ToolbarBtn onClick={() => a.addParent(id, "Mother")}>+ Mother</ToolbarBtn>
+        <ToolbarBtn onClick={() => a.addParent(id, "Father")} disabled={!canAddFather} title={!canAddFather ? "Father already exists" : ""}>+ Father</ToolbarBtn>
+        <ToolbarBtn onClick={() => a.addParent(id, "Mother")} disabled={!canAddMother} title={!canAddMother ? "Mother already exists" : ""}>+ Mother</ToolbarBtn>
         <ToolbarBtn
           onClick={() => a.addSpouse(id)}
           disabled={a.hasPartner(id)}
@@ -163,6 +204,49 @@ function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
         </ToolbarBtn>
         <ToolbarBtn onClick={() => a.addChild(id)}>+ Child</ToolbarBtn>
         <ToolbarBtn onClick={() => fileRef.current?.click()}>+ Media</ToolbarBtn>
+        <Sheet>
+          <SheetTrigger asChild>
+            <div className="col-span-2">
+              <ToolbarBtn onClick={() => {}} title="Edit details">Edit Details</ToolbarBtn>
+            </div>
+          </SheetTrigger>
+          <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Edit Details</SheetTitle>
+              <SheetDescription>Update personal information for {data.label || "this member"}.</SheetDescription>
+            </SheetHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor={`name-${id}`}>Name (Required)</Label>
+                <Input id={`name-${id}`} value={data.label} onChange={(e) => a.updateNodeData(id, { label: e.target.value })} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`dob-${id}`}>Date of Birth</Label>
+                <Input id={`dob-${id}`} type="date" value={data.dob || ""} onChange={(e) => a.updateNodeData(id, { dob: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`birthPlace-${id}`}>Birth Place</Label>
+                <Input id={`birthPlace-${id}`} value={data.birthPlace || ""} onChange={(e) => a.updateNodeData(id, { birthPlace: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`deathDate-${id}`}>Death Date (if deceased)</Label>
+                <Input id={`deathDate-${id}`} type="date" value={data.deathDate || ""} onChange={(e) => a.updateNodeData(id, { deathDate: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`address-${id}`}>Address</Label>
+                <Textarea id={`address-${id}`} value={data.address || ""} onChange={(e) => a.updateNodeData(id, { address: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`residingAt-${id}`}>Currently Residing At</Label>
+                <Input id={`residingAt-${id}`} value={data.residingAt || ""} onChange={(e) => a.updateNodeData(id, { residingAt: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`otherDetails-${id}`}>Other Details</Label>
+                <Textarea id={`otherDetails-${id}`} value={data.otherDetails || ""} onChange={(e) => a.updateNodeData(id, { otherDetails: e.target.value })} />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
       <input
         ref={fileRef}
@@ -227,6 +311,22 @@ function formatDate(d?: string) {
   return dt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
+function CollapseBtn({ id, isCollapsed }: { id: string; isCollapsed?: boolean }) {
+  const a = useActions();
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        a.toggleCollapse(id);
+      }}
+      className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-background border rounded-full p-0.5 shadow-sm hover:bg-accent z-10 text-muted-foreground transition-transform hover:scale-110"
+      title={isCollapsed ? "Expand hierarchy" : "Collapse hierarchy"}
+    >
+      {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+    </button>
+  );
+}
+
 function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   const pretty = formatDate(data.marriageDate);
   return (
@@ -267,10 +367,11 @@ function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
         </div>
       </div>
       <div
-        className="-mt-1 px-2 py-0.5 rounded-full border bg-card text-[10px] font-medium shadow-sm whitespace-nowrap"
+        className="-mt-1 px-2 py-0.5 rounded-full border bg-card text-[10px] font-medium shadow-sm whitespace-nowrap relative"
         style={{ fontFamily: "'Kalam', cursive" }}
       >
         {pretty ?? "Set date"}
+        <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
       </div>
       <Handles />
     </div>
@@ -290,11 +391,12 @@ function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
         <PersonToolbar id={id} data={data} />
       </NodeToolbar>
       <Handles />
-      <div className="flex items-center justify-center gap-1.5">
+      <div className="flex items-center justify-center gap-1.5 relative">
         <span className="text-xs opacity-70">{genderIcon[gender]}</span>
         <span>{data.label}</span>
       </div>
       <MediaStrip nodeId={id} media={data.media ?? []} />
+      <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
     </div>
   );
 }
@@ -545,6 +647,13 @@ function FamilyFlowInner() {
     () => ({
       hasPartner: (id) => !!q.partnerBondOf(id),
       hasParent: (id) => !!q.parentBondOf(id) || q.directParentsOf(id).length > 0,
+      updateNodeData: (id, data) => patch(id, (d) => ({ ...d, ...data })),
+      toggleCollapse: (id) => patch(id, (d) => ({ ...d, isCollapsed: !d.isCollapsed })),
+      getParentInfo: (id) => ({
+        hasBondParent: !!q.parentBondOf(id),
+        directParents: q.directParentsOf(id),
+      }),
+      getNode: (id) => nodes.find((n) => n.id === id),
       rename: (id, label) => patch(id, (d) => ({ ...d, label })),
       setGender: (id, gender) => patch(id, (d) => ({ ...d, gender })),
       setMarriageDate: (id, marriageDate) => patch(id, (d) => ({ ...d, marriageDate })),
@@ -699,23 +808,50 @@ function FamilyFlowInner() {
         </header>
 
         <div ref={wrapper} className="flex-1 relative">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={(changes) => {
-              onEdgesChange(changes);
-              queueMicrotask(() => setEdges((es) => reconcile(nodes, es)));
-            }}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            fitView
-            deleteKeyCode={["Delete"]}
-          >
-            <Background gap={20} size={1} />
-            <Controls />
-            <MiniMap pannable zoomable />
-          </ReactFlow>
+          {(() => {
+            const hiddenNodeIds = new Set<string>();
+            const collapsed = nodes.filter(n => n.data.isCollapsed).map(n => n.id);
+            
+            const adjacency = new Map<string, string[]>();
+            edges.forEach(e => {
+              adjacency.set(e.source, [...(adjacency.get(e.source) || []), e.target]);
+            });
+
+            const queue = [...collapsed];
+            while (queue.length > 0) {
+              const curr = queue.shift()!;
+              const children = adjacency.get(curr) || [];
+              children.forEach(c => {
+                if (!hiddenNodeIds.has(c)) {
+                  hiddenNodeIds.add(c);
+                  queue.push(c);
+                }
+              });
+            }
+
+            const renderNodes = nodes.map(n => ({ ...n, hidden: hiddenNodeIds.has(n.id) }));
+            const renderEdges = edges.map(e => ({ ...e, hidden: hiddenNodeIds.has(e.source) || hiddenNodeIds.has(e.target) }));
+
+            return (
+              <ReactFlow
+                nodes={renderNodes}
+                edges={renderEdges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={(changes) => {
+                  onEdgesChange(changes);
+                  queueMicrotask(() => setEdges((es) => reconcile(nodes, es)));
+                }}
+                onConnect={onConnect}
+                nodeTypes={nodeTypes}
+                fitView
+                deleteKeyCode={["Delete"]}
+              >
+                <Background gap={20} size={1} />
+                <Controls />
+                <MiniMap pannable zoomable />
+              </ReactFlow>
+            );
+          })()}
         </div>
       </div>
     </ActionsContext.Provider>

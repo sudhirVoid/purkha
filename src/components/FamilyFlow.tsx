@@ -8,6 +8,7 @@ import {
   addEdge,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   MarkerType,
   Handle,
   Position,
@@ -18,6 +19,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { toPng } from "html-to-image";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Input } from "./ui/input";
@@ -666,6 +668,8 @@ function FamilyFlowInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState<FamilyNode>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const wrapper = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { fitView } = useReactFlow();
 
   const commit = useCallback(
     (mutator: (n: FamilyNode[], e: Edge[]) => { nodes: FamilyNode[]; edges: Edge[] }) => {
@@ -842,6 +846,53 @@ function FamilyFlowInner() {
   const addStandalonePerson = () =>
     setNodes((ns) => [...ns, personNode(nextId(), 100 + Math.random() * 300, 60, "Person")]);
 
+  const exportImage = useCallback(() => {
+    fitView({ padding: 0.2, duration: 100 });
+    setTimeout(() => {
+      const el = document.querySelector(".react-flow__viewport") as HTMLElement || document.querySelector(".react-flow") as HTMLElement;
+      if (!el) return;
+      toPng(el, { backgroundColor: "#ffffff" })
+        .then((dataUrl) => {
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = "family-tree.png";
+          a.click();
+        })
+        .catch(console.error);
+    }, 250);
+  }, [fitView]);
+
+  const exportBackup = useCallback(() => {
+    const data = JSON.stringify({ nodes, edges }, null, 2);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+    a.download = "family-tree.purkha.json";
+    a.click();
+  }, [nodes, edges]);
+
+  const importBackup = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target?.result as string);
+          if (data.nodes && data.edges) {
+            setNodes(data.nodes);
+            setEdges(data.edges);
+            setTimeout(() => setNodes((ns) => autoLayout(ns, data.edges)), 50);
+          }
+        } catch (err) {
+          console.error("Failed to parse backup file", err);
+        }
+      };
+      reader.readAsText(file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [setNodes, setEdges]
+  );
+
   return (
     <ActionsContext.Provider value={actions}>
       <div className="h-screen w-screen flex flex-col bg-background">
@@ -867,6 +918,31 @@ function FamilyFlowInner() {
             >
               Auto layout
             </button>
+            <button
+              onClick={exportImage}
+              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
+            >
+              Export Image
+            </button>
+            <button
+              onClick={exportBackup}
+              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
+            >
+              Download Tree
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
+            >
+              Upload Tree
+            </button>
+            <input
+              type="file"
+              accept="application/json"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={importBackup}
+            />
             <button
               onClick={clearAll}
               className="px-3 py-1.5 text-sm rounded-md border border-destructive text-destructive hover:bg-destructive/10 transition"

@@ -88,30 +88,30 @@ function mediaKindOf(file: File): MediaKind {
 }
 
 function MediaStrip({ nodeId, media }: { nodeId: string; media: MediaItem[] }) {
-  const a = useActions();
+  const actions = useActions();
   if (!media.length) return null;
   return (
     <div className="mt-2 flex flex-wrap gap-1.5 justify-center max-w-[220px]">
-      {media.map((m) => (
-        <Dialog key={m.id}>
+      {media.map((mediaItem) => (
+        <Dialog key={mediaItem.id}>
           <div className="relative group">
             <DialogTrigger asChild>
               <div className="cursor-pointer">
-                {m.kind === "image" && (
-                  <img src={m.url} alt={m.name} className="h-10 w-10 rounded-md object-cover border" />
+                {mediaItem.kind === "image" && (
+                  <img src={mediaItem.url} alt={mediaItem.name} className="h-10 w-10 rounded-md object-cover border" />
                 )}
-                {m.kind === "video" && (
-                  <video src={m.url} className="h-10 w-10 rounded-md object-cover border" muted controls={false} />
+                {mediaItem.kind === "video" && (
+                  <video src={mediaItem.url} className="h-10 w-10 rounded-md object-cover border" muted controls={false} />
                 )}
-                {m.kind === "audio" && (
+                {mediaItem.kind === "audio" && (
                   <div className="h-10 w-10 rounded-md border grid place-items-center text-base bg-muted">♪</div>
                 )}
               </div>
             </DialogTrigger>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                a.removeMedia(nodeId, m.id);
+              onClick={(event) => {
+                event.stopPropagation();
+                actions.removeMedia(nodeId, mediaItem.id);
               }}
               className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-none opacity-0 group-hover:opacity-100 transition z-10"
               title="Remove"
@@ -120,16 +120,16 @@ function MediaStrip({ nodeId, media }: { nodeId: string; media: MediaItem[] }) {
             </button>
           </div>
           <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center bg-black/95 border-none p-4 sm:p-10">
-            <DialogTitle className="sr-only">{m.name}</DialogTitle>
+            <DialogTitle className="sr-only">{mediaItem.name}</DialogTitle>
             <DialogDescription className="sr-only">Media viewer</DialogDescription>
-            {m.kind === "image" && (
-              <img src={m.url} alt={m.name} className="max-w-full max-h-[80vh] object-contain rounded-md" />
+            {mediaItem.kind === "image" && (
+              <img src={mediaItem.url} alt={mediaItem.name} className="max-w-full max-h-[80vh] object-contain rounded-md" />
             )}
-            {m.kind === "video" && (
-              <video src={m.url} className="max-w-full max-h-[80vh] rounded-md" controls autoPlay />
+            {mediaItem.kind === "video" && (
+              <video src={mediaItem.url} className="max-w-full max-h-[80vh] rounded-md" controls autoPlay />
             )}
-            {m.kind === "audio" && (
-              <audio src={m.url} controls className="w-full max-w-md mt-8" autoPlay />
+            {mediaItem.kind === "audio" && (
+              <audio src={mediaItem.url} controls className="w-full max-w-md mt-8" autoPlay />
             )}
           </DialogContent>
         </Dialog>
@@ -162,52 +162,52 @@ function ToolbarBtn({
 }
 
 function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
-  const a = useActions();
+  const actions = useActions();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const parentInfo = a.getParentInfo(id);
-  const canAddFather = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => a.getNode(pid)?.data.gender === "male");
-  const canAddMother = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => a.getNode(pid)?.data.gender === "female");
+  const parentInfo = actions.getParentInfo(id);
+  const canAddFather = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => actions.getNode(pid)?.data.gender === "male");
+  const canAddMother = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => actions.getNode(pid)?.data.gender === "female");
 
   return (
     <div className="rounded-xl border bg-card shadow-lg p-2 space-y-2 w-[240px]">
       <input
         value={data.label}
-        onChange={(e) => a.rename(id, e.target.value)}
+        onChange={(event) => actions.rename(id, event.target.value)}
         className="w-full px-2 py-1 text-xs rounded-md border bg-background"
         placeholder="Name"
       />
       <div className="flex gap-1">
-        {(["male", "female", "other"] as Gender[]).map((g) => (
+        {(["male", "female", "other"] as Gender[]).map((genderOption) => (
           <button
-            key={g}
-            onClick={() => a.setGender(id, g)}
+            key={genderOption}
+            onClick={() => actions.setGender(id, genderOption)}
             className={`flex-1 px-2 py-1 text-xs rounded-md border capitalize transition ${
-              (data.gender ?? "other") === g ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"
+              (data.gender ?? "other") === genderOption ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"
             }`}
           >
-            {genderIcon[g]} {g}
+            {genderIcon[genderOption]} {genderOption}
           </button>
         ))}
       </div>
       <div className="grid grid-cols-2 gap-1">
-        <ToolbarBtn onClick={() => a.addParent(id, "Father")} disabled={!canAddFather} title={!canAddFather ? "Father already exists" : ""}>+ Father</ToolbarBtn>
-        <ToolbarBtn onClick={() => a.addParent(id, "Mother")} disabled={!canAddMother} title={!canAddMother ? "Mother already exists" : ""}>+ Mother</ToolbarBtn>
+        <ToolbarBtn onClick={() => actions.addParent(id, "Father")} disabled={!canAddFather} title={!canAddFather ? "Father already exists" : ""}>+ Father</ToolbarBtn>
+        <ToolbarBtn onClick={() => actions.addParent(id, "Mother")} disabled={!canAddMother} title={!canAddMother ? "Mother already exists" : ""}>+ Mother</ToolbarBtn>
         <ToolbarBtn
-          onClick={() => a.addSpouse(id)}
-          disabled={a.hasPartner(id)}
-          title={a.hasPartner(id) ? "Already has a partner" : ""}
+          onClick={() => actions.addSpouse(id)}
+          disabled={actions.hasPartner(id)}
+          title={actions.hasPartner(id) ? "Already has a partner" : ""}
         >
           + Spouse
         </ToolbarBtn>
         <ToolbarBtn
-          onClick={() => a.addSibling(id)}
-          disabled={!a.hasParent(id)}
-          title={!a.hasParent(id) ? "Add a parent first" : ""}
+          onClick={() => actions.addSibling(id)}
+          disabled={!actions.hasParent(id)}
+          title={!actions.hasParent(id) ? "Add a parent first" : ""}
         >
           + Sibling
         </ToolbarBtn>
-        <ToolbarBtn onClick={() => a.addChild(id)}>+ Child</ToolbarBtn>
+        <ToolbarBtn onClick={() => actions.addChild(id)}>+ Child</ToolbarBtn>
         <ToolbarBtn onClick={() => fileRef.current?.click()}>+ Media</ToolbarBtn>
         <Sheet>
           <SheetTrigger asChild>
@@ -223,31 +223,31 @@ function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor={`name-${id}`}>Name (Required)</Label>
-                <Input id={`name-${id}`} value={data.label} onChange={(e) => a.updateNodeData(id, { label: e.target.value })} required />
+                <Input id={`name-${id}`} value={data.label} onChange={(event) => actions.updateNodeData(id, { label: event.target.value })} required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`dob-${id}`}>Date of Birth</Label>
-                <Input id={`dob-${id}`} type="date" value={data.dob || ""} onChange={(e) => a.updateNodeData(id, { dob: e.target.value })} />
+                <Input id={`dob-${id}`} type="date" value={data.dob || ""} onChange={(event) => actions.updateNodeData(id, { dob: event.target.value })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`birthPlace-${id}`}>Birth Place</Label>
-                <Input id={`birthPlace-${id}`} value={data.birthPlace || ""} onChange={(e) => a.updateNodeData(id, { birthPlace: e.target.value })} />
+                <Input id={`birthPlace-${id}`} value={data.birthPlace || ""} onChange={(event) => actions.updateNodeData(id, { birthPlace: event.target.value })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`deathDate-${id}`}>Death Date (if deceased)</Label>
-                <Input id={`deathDate-${id}`} type="date" value={data.deathDate || ""} onChange={(e) => a.updateNodeData(id, { deathDate: e.target.value })} />
+                <Input id={`deathDate-${id}`} type="date" value={data.deathDate || ""} onChange={(event) => actions.updateNodeData(id, { deathDate: event.target.value })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`address-${id}`}>Address</Label>
-                <Textarea id={`address-${id}`} value={data.address || ""} onChange={(e) => a.updateNodeData(id, { address: e.target.value })} />
+                <Textarea id={`address-${id}`} value={data.address || ""} onChange={(event) => actions.updateNodeData(id, { address: event.target.value })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`residingAt-${id}`}>Currently Residing At</Label>
-                <Input id={`residingAt-${id}`} value={data.residingAt || ""} onChange={(e) => a.updateNodeData(id, { residingAt: e.target.value })} />
+                <Input id={`residingAt-${id}`} value={data.residingAt || ""} onChange={(event) => actions.updateNodeData(id, { residingAt: event.target.value })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`otherDetails-${id}`}>Other Details</Label>
-                <Textarea id={`otherDetails-${id}`} value={data.otherDetails || ""} onChange={(e) => a.updateNodeData(id, { otherDetails: e.target.value })} />
+                <Textarea id={`otherDetails-${id}`} value={data.otherDetails || ""} onChange={(event) => actions.updateNodeData(id, { otherDetails: event.target.value })} />
               </div>
             </div>
           </SheetContent>
@@ -259,13 +259,13 @@ function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
         accept="image/*,video/*,audio/*"
         multiple
         className="hidden"
-        onChange={(e) => {
-          a.addMedia(id, e.target.files);
-          e.target.value = "";
+        onChange={(event) => {
+          actions.addMedia(id, event.target.files);
+          event.target.value = "";
         }}
       />
       <button
-        onClick={() => a.remove(id)}
+        onClick={() => actions.remove(id)}
         className="w-full px-2 py-1 text-xs rounded-md border border-destructive text-destructive hover:bg-destructive/10"
       >
         Delete
@@ -275,19 +275,19 @@ function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
 }
 
 function BondToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
-  const a = useActions();
+  const actions = useActions();
   return (
     <div className="rounded-xl border bg-card shadow-lg p-2 space-y-2 w-[220px]">
       <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">Marriage date</label>
       <input
         type="date"
         value={data.marriageDate ?? ""}
-        onChange={(e) => a.setMarriageDate(id, e.target.value)}
+        onChange={(event) => actions.setMarriageDate(id, event.target.value)}
         className="w-full px-2 py-1 text-xs rounded-md border bg-background"
       />
-      <ToolbarBtn onClick={() => a.addChild(id)}>+ Child</ToolbarBtn>
+      <ToolbarBtn onClick={() => actions.addChild(id)}>+ Child</ToolbarBtn>
       <button
-        onClick={() => a.remove(id)}
+        onClick={() => actions.remove(id)}
         className="w-full px-2 py-1 text-xs rounded-md border border-destructive text-destructive hover:bg-destructive/10"
       >
         Delete
@@ -309,21 +309,21 @@ function Handles() {
   );
 }
 
-function formatDate(d?: string) {
-  if (!d) return null;
-  const dt = new Date(d + "T00:00:00");
-  if (Number.isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+function formatDate(dateString?: string) {
+  if (!dateString) return null;
+  const dateObj = new Date(dateString + "T00:00:00");
+  if (Number.isNaN(dateObj.getTime())) return dateString;
+  return dateObj.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
 function CollapseBtn({ id, isCollapsed }: { id: string; isCollapsed?: boolean }) {
-  const a = useActions();
-  if (!a.canCollapse(id)) return null;
+  const actions = useActions();
+  if (!actions.canCollapse(id)) return null;
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        a.toggleCollapse(id);
+      onClick={(event) => {
+        event.stopPropagation();
+        actions.toggleCollapse(id);
       }}
       className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-background border rounded-full p-0.5 shadow-sm hover:bg-accent z-10 text-muted-foreground transition-transform hover:scale-110"
       title={isCollapsed ? "Expand hierarchy" : "Collapse hierarchy"}
@@ -377,7 +377,6 @@ function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
         style={{ fontFamily: "'Kalam', cursive" }}
       >
         {pretty ?? "Set date"}
-        <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
       </div>
       <Handles />
     </div>
@@ -386,15 +385,15 @@ function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
 
 function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   const gender = data.gender ?? "other";
-  const a = useActions();
+  const actions = useActions();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      a.setProfileImage(id, ev.target?.result as string);
+    reader.onload = (fileEvent) => {
+      actions.setProfileImage(id, fileEvent.target?.result as string);
     };
     reader.readAsDataURL(file);
     if (fileRef.current) fileRef.current.value = "";
@@ -412,25 +411,23 @@ function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
       </NodeToolbar>
       <Handles />
       
-      <div className="flex flex-col items-center justify-center relative">
+      <div className="flex items-center justify-center gap-2 relative">
         <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handleProfileImageChange} />
         <div 
-          className="w-14 h-14 rounded-full border-2 bg-white flex items-center justify-center relative overflow-hidden mb-2 group cursor-pointer"
+          className="w-8 h-8 rounded-full border bg-white flex items-center justify-center relative overflow-hidden shrink-0 group cursor-pointer"
           onClick={() => fileRef.current?.click()}
+          title="Click to upload picture"
         >
           {data.profileImage ? (
             <img src={data.profileImage} alt={data.label} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-2xl opacity-40">{genderIcon[gender]}</span>
+            <span className="text-sm opacity-50">{genderIcon[gender]}</span>
           )}
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Camera className="w-5 h-5 text-white" />
+            <Camera className="w-3.5 h-3.5 text-white" />
           </div>
         </div>
-
-        <div className="flex items-center justify-center gap-1.5 relative">
-          <span>{data.label}</span>
-        </div>
+        <span>{data.label}</span>
       </div>
       <MediaStrip nodeId={id} media={data.media ?? []} />
       <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
@@ -487,26 +484,26 @@ const initialEdges: Edge[] = [
 ];
 
 function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
-  const kindOf = new Map(nodes.map((n) => [n.id, n.data.kind]));
+  const kindOf = new Map(nodes.map((node) => [node.id, node.data.kind]));
   const partnersOf = new Map<string, string[]>();
   const parentBondOf = new Map<string, string>();
   const childrenOfBond = new Map<string, string[]>();
   const directChildrenOf = new Map<string, string[]>();
-  edges.forEach((e) => {
-    const sk = kindOf.get(e.source);
-    const tk = kindOf.get(e.target);
-    if (sk === "person" && tk === "bond") {
-      partnersOf.set(e.target, [...(partnersOf.get(e.target) || []), e.source]);
-    } else if (sk === "bond" && tk === "person") {
-      parentBondOf.set(e.target, e.source);
-      childrenOfBond.set(e.source, [...(childrenOfBond.get(e.source) || []), e.target]);
-    } else if (sk === "person" && tk === "person") {
-      directChildrenOf.set(e.source, [...(directChildrenOf.get(e.source) || []), e.target]);
+  edges.forEach((edge) => {
+    const sourceKind = kindOf.get(edge.source);
+    const targetKind = kindOf.get(edge.target);
+    if (sourceKind === "person" && targetKind === "bond") {
+      partnersOf.set(edge.target, [...(partnersOf.get(edge.target) || []), edge.source]);
+    } else if (sourceKind === "bond" && targetKind === "person") {
+      parentBondOf.set(edge.target, edge.source);
+      childrenOfBond.set(edge.source, [...(childrenOfBond.get(edge.source) || []), edge.target]);
+    } else if (sourceKind === "person" && targetKind === "person") {
+      directChildrenOf.set(edge.source, [...(directChildrenOf.get(edge.source) || []), edge.target]);
     }
   });
 
-  const persons = nodes.filter((n) => n.data.kind === "person").map((n) => n.id);
-  const bonds = nodes.filter((n) => n.data.kind === "bond").map((n) => n.id);
+  const persons = nodes.filter((node) => node.data.kind === "person").map((node) => node.id);
+  const bonds = nodes.filter((node) => node.data.kind === "bond").map((node) => node.id);
 
   const level = new Map<string, number>();
   const compute = (id: string, seen: Set<string>): number => {
@@ -517,15 +514,15 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     if (parentBondOf.has(id)) {
       const bond = parentBondOf.get(id)!;
       const parts = partnersOf.get(bond) || [];
-      if (parts.length) lvl = Math.max(...parts.map((p) => compute(p, seen))) + 1;
+      if (parts.length) lvl = Math.max(...parts.map((partnerId) => compute(partnerId, seen))) + 1;
     } else {
-      const dp = persons.filter((p) => (directChildrenOf.get(p) || []).includes(id));
-      if (dp.length) lvl = Math.max(...dp.map((p) => compute(p, seen))) + 1;
+      const dp = persons.filter((personId) => (directChildrenOf.get(personId) || []).includes(id));
+      if (dp.length) lvl = Math.max(...dp.map((personId) => compute(personId, seen))) + 1;
     }
     level.set(id, lvl);
     return lvl;
   };
-  persons.forEach((p) => compute(p, new Set()));
+  persons.forEach((personId) => compute(personId, new Set()));
 
   // Ensure partners in a bond share the same level (max of all partners).
   // A spouse added to a child has no parent, so it defaults to level 0.
@@ -533,13 +530,13 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   let changed = true;
   while (changed) {
     changed = false;
-    bonds.forEach((b) => {
-      const parts = partnersOf.get(b) || [];
+    bonds.forEach((bondId) => {
+      const parts = partnersOf.get(bondId) || [];
       if (parts.length < 2) return;
-      const maxLvl = Math.max(...parts.map((p) => level.get(p) ?? 0));
-      parts.forEach((p) => {
-        if ((level.get(p) ?? 0) < maxLvl) {
-          level.set(p, maxLvl);
+      const maxLvl = Math.max(...parts.map((partnerId) => level.get(partnerId) ?? 0));
+      parts.forEach((partnerId) => {
+        if ((level.get(partnerId) ?? 0) < maxLvl) {
+          level.set(partnerId, maxLvl);
           changed = true;
         }
       });
@@ -552,37 +549,37 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   const BOND_DY = 100;
 
   const byLevel = new Map<number, string[]>();
-  persons.forEach((p) => {
-    const l = level.get(p) ?? 0;
-    byLevel.set(l, [...(byLevel.get(l) || []), p]);
+  persons.forEach((personId) => {
+    const lvl = level.get(personId) ?? 0;
+    byLevel.set(lvl, [...(byLevel.get(lvl) || []), personId]);
   });
 
   const positions = new Map<string, { x: number; y: number }>();
   const sortedLevels = [...byLevel.keys()].sort((a, b) => a - b);
 
-  sortedLevels.forEach((l) => {
-    const pool = byLevel.get(l)!;
+  sortedLevels.forEach((lvl) => {
+    const pool = byLevel.get(lvl)!;
     const parentX = (id: string) => {
-      const b = parentBondOf.get(id);
-      if (!b) return 0;
-      const parts = partnersOf.get(b) || [];
-      const px = parts.map((p) => positions.get(p)?.x ?? 0);
-      return px.length ? px.reduce((a, b) => a + b, 0) / px.length : 0;
+      const bondId = parentBondOf.get(id);
+      if (!bondId) return 0;
+      const parts = partnersOf.get(bondId) || [];
+      const px = parts.map((partnerId) => positions.get(partnerId)?.x ?? 0);
+      return px.length ? px.reduce((sum, val) => sum + val, 0) / px.length : 0;
     };
     const sorted = [...pool].sort((a, b) => parentX(a) - parentX(b));
 
     const ordered: string[] = [];
     const placed = new Set<string>();
-    sorted.forEach((p) => {
-      if (placed.has(p)) return;
-      ordered.push(p);
-      placed.add(p);
-      const partnerBonds = bonds.filter((b) => (partnersOf.get(b) || []).includes(p));
-      partnerBonds.forEach((b) => {
-        (partnersOf.get(b) || []).forEach((o) => {
-          if (!placed.has(o) && level.get(o) === l) {
-            ordered.push(o);
-            placed.add(o);
+    sorted.forEach((personId) => {
+      if (placed.has(personId)) return;
+      ordered.push(personId);
+      placed.add(personId);
+      const partnerBonds = bonds.filter((bondId) => (partnersOf.get(bondId) || []).includes(personId));
+      partnerBonds.forEach((bondId) => {
+        (partnersOf.get(bondId) || []).forEach((otherPartnerId) => {
+          if (!placed.has(otherPartnerId) && level.get(otherPartnerId) === lvl) {
+            ordered.push(otherPartnerId);
+            placed.add(otherPartnerId);
           }
         });
       });
@@ -590,33 +587,33 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
     const totalW = (ordered.length - 1) * (NODE_W + NODE_GAP);
     ordered.forEach((id, i) => {
-      positions.set(id, { x: i * (NODE_W + NODE_GAP) - totalW / 2, y: l * LEVEL_H });
+      positions.set(id, { x: i * (NODE_W + NODE_GAP) - totalW / 2, y: lvl * LEVEL_H });
     });
   });
 
-  bonds.forEach((b) => {
-    const parts = partnersOf.get(b) || [];
-    const pts = parts.map((p) => positions.get(p)).filter(Boolean) as { x: number; y: number }[];
+  bonds.forEach((bondId) => {
+    const parts = partnersOf.get(bondId) || [];
+    const pts = parts.map((partnerId) => positions.get(partnerId)).filter(Boolean) as { x: number; y: number }[];
     if (pts.length) {
-      const avgX = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-      const maxY = Math.max(...pts.map((p) => p.y));
-      positions.set(b, { x: avgX + 30, y: maxY + BOND_DY });
+      const avgX = pts.reduce((sum, pt) => sum + pt.x, 0) / pts.length;
+      const maxY = Math.max(...pts.map((pt) => pt.y));
+      positions.set(bondId, { x: avgX + 30, y: maxY + BOND_DY });
     }
   });
 
   childrenOfBond.forEach((kids, bondId) => {
-    const bp = positions.get(bondId);
-    if (!bp) return;
+    const bondPos = positions.get(bondId);
+    if (!bondPos) return;
     const step = NODE_W + NODE_GAP;
     
     // Group kids and their spouses into units
-    const units = kids.map((k) => {
-      const spouseBonds = bonds.filter((b) => (partnersOf.get(b) || []).includes(k));
+    const units = kids.map((kidId) => {
+      const spouseBonds = bonds.filter((bId) => (partnersOf.get(bId) || []).includes(kidId));
       const spouses = spouseBonds
-        .flatMap((b) => partnersOf.get(b) || [])
-        .filter((s) => s !== k && level.get(s) === level.get(k));
+        .flatMap((bId) => partnersOf.get(bId) || [])
+        .filter((spouseId) => spouseId !== kidId && level.get(spouseId) === level.get(kidId));
       
-      const allMembers = [k, ...spouses].sort(
+      const allMembers = [kidId, ...spouses].sort(
         (a, b) => (positions.get(a)?.x ?? 0) - (positions.get(b)?.x ?? 0)
       );
       
@@ -627,46 +624,46 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     });
 
     units.sort((a, b) => {
-      const avgA = a.members.reduce((sum, m) => sum + (positions.get(m)?.x ?? 0), 0) / a.members.length;
-      const avgB = b.members.reduce((sum, m) => sum + (positions.get(m)?.x ?? 0), 0) / b.members.length;
+      const avgA = a.members.reduce((sum, memberId) => sum + (positions.get(memberId)?.x ?? 0), 0) / a.members.length;
+      const avgB = b.members.reduce((sum, memberId) => sum + (positions.get(memberId)?.x ?? 0), 0) / b.members.length;
       return avgA - avgB;
     });
 
-    const totalWidth = units.reduce((sum, u) => sum + u.width, 0);
-    let startX = bp.x - totalWidth / 2;
+    const totalWidth = units.reduce((sum, unit) => sum + unit.width, 0);
+    let startX = bondPos.x - totalWidth / 2;
 
-    units.forEach((u) => {
-      u.members.forEach((m, i) => {
-        const cur = positions.get(m);
-        positions.set(m, {
+    units.forEach((unit) => {
+      unit.members.forEach((memberId, i) => {
+        const cur = positions.get(memberId);
+        positions.set(memberId, {
           x: startX + i * step + step / 2,
-          y: cur?.y ?? bp.y + LEVEL_H - BOND_DY,
+          y: cur?.y ?? bondPos.y + LEVEL_H - BOND_DY,
         });
       });
-      startX += u.width;
+      startX += unit.width;
     });
   });
 
   // Re-adjust bonds after children and their spouses have been moved
-  bonds.forEach((b) => {
-    const parts = partnersOf.get(b) || [];
-    const pts = parts.map((p) => positions.get(p)).filter(Boolean) as { x: number; y: number }[];
+  bonds.forEach((bondId) => {
+    const parts = partnersOf.get(bondId) || [];
+    const pts = parts.map((partnerId) => positions.get(partnerId)).filter(Boolean) as { x: number; y: number }[];
     if (pts.length) {
-      const avgX = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-      const maxY = Math.max(...pts.map((p) => p.y));
-      positions.set(b, { x: avgX + 30, y: maxY + BOND_DY });
+      const avgX = pts.reduce((sum, pt) => sum + pt.x, 0) / pts.length;
+      const maxY = Math.max(...pts.map((pt) => pt.y));
+      positions.set(bondId, { x: avgX + 30, y: maxY + BOND_DY });
     }
   });
 
   let orphanY = 0;
-  nodes.forEach((n) => {
-    if (!positions.has(n.id)) {
-      positions.set(n.id, { x: -400, y: orphanY });
+  nodes.forEach((node) => {
+    if (!positions.has(node.id)) {
+      positions.set(node.id, { x: -400, y: orphanY });
       orphanY += 120;
     }
   });
 
-  return nodes.map((n) => ({ ...n, position: positions.get(n.id)! }));
+  return nodes.map((node) => ({ ...node, position: positions.get(node.id)! }));
 }
 
 let idCounter = 100;
@@ -674,25 +671,25 @@ const nextId = () => `n${++idCounter}`;
 
 /** Rewrite edges so any person→person edge from a partnered person is rerouted through their bond. */
 function reconcile(nodes: FamilyNode[], edges: Edge[]): Edge[] {
-  const kindOf = new Map(nodes.map((n) => [n.id, n.data.kind]));
+  const kindOf = new Map(nodes.map((node) => [node.id, node.data.kind]));
   const partnerBond = new Map<string, string>();
-  edges.forEach((e) => {
-    if (kindOf.get(e.source) === "person" && kindOf.get(e.target) === "bond") {
-      partnerBond.set(e.source, e.target);
+  edges.forEach((edge) => {
+    if (kindOf.get(edge.source) === "person" && kindOf.get(edge.target) === "bond") {
+      partnerBond.set(edge.source, edge.target);
     }
   });
   const seen = new Set<string>();
   const out: Edge[] = [];
-  for (const e of edges) {
-    let src = e.source;
-    const tgt = e.target;
+  for (const edge of edges) {
+    let src = edge.source;
+    const tgt = edge.target;
     if (kindOf.get(src) === "person" && kindOf.get(tgt) === "person" && partnerBond.has(src)) {
       src = partnerBond.get(src)!;
     }
     const key = `${src}->${tgt}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(src === e.source ? e : { ...e, source: src });
+    out.push(src === edge.source ? edge : { ...edge, source: src });
   }
   return out;
 }
@@ -705,14 +702,14 @@ function FamilyFlowInner() {
   const { fitView } = useReactFlow();
 
   const commit = useCallback(
-    (mutator: (n: FamilyNode[], e: Edge[]) => { nodes: FamilyNode[]; edges: Edge[] }) => {
-      setNodes((ns) => {
-        setEdges((es) => {
-          const r = mutator(ns, es);
-          queueMicrotask(() => setNodes(r.nodes));
-          return reconcile(r.nodes, r.edges);
+    (mutator: (currentNodes: FamilyNode[], currentEdges: Edge[]) => { nodes: FamilyNode[]; edges: Edge[] }) => {
+      setNodes((currentNodes) => {
+        setEdges((currentEdges) => {
+          const result = mutator(currentNodes, currentEdges);
+          queueMicrotask(() => setNodes(result.nodes));
+          return reconcile(result.nodes, result.edges);
         });
-        return ns;
+        return currentNodes;
       });
     },
     [setNodes, setEdges],
@@ -720,50 +717,53 @@ function FamilyFlowInner() {
 
   const onConnect = useCallback(
     (params: Connection) =>
-      setEdges((es) => reconcile(nodes, addEdge({ ...params, ...edgeBase } as Edge, es))),
+      setEdges((currentEdges) => reconcile(nodes, addEdge({ ...params, ...edgeBase } as Edge, currentEdges))),
     [setEdges, nodes],
   );
 
-  const q = useMemo(() => {
-    const kindOf = new Map(nodes.map((n) => [n.id, n.data.kind]));
+  const queries = useMemo(() => {
+    const kindOf = new Map(nodes.map((node) => [node.id, node.data.kind]));
     return {
       kindOf,
       partnerBondOf: (id: string) =>
-        edges.find((e) => e.source === id && kindOf.get(e.target) === "bond")?.target ?? null,
+        edges.find((edge) => edge.source === id && kindOf.get(edge.target) === "bond")?.target ?? null,
       parentBondOf: (id: string) =>
-        edges.find((e) => e.target === id && kindOf.get(e.source) === "bond")?.source ?? null,
+        edges.find((edge) => edge.target === id && kindOf.get(edge.source) === "bond")?.source ?? null,
       directParentsOf: (id: string) =>
-        edges.filter((e) => e.target === id && kindOf.get(e.source) === "person").map((e) => e.source),
+        edges.filter((edge) => edge.target === id && kindOf.get(edge.source) === "person").map((edge) => edge.source),
     };
   }, [nodes, edges]);
 
   const patch = useCallback(
-    (id: string, fn: (d: FamilyNodeData) => FamilyNodeData) =>
-      setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data: fn(n.data) } : n))),
+    (id: string, fn: (nodeData: FamilyNodeData) => FamilyNodeData) =>
+      setNodes((currentNodes) => currentNodes.map((node) => (node.id === id ? { ...node, data: fn(node.data) } : node))),
     [setNodes],
   );
 
   const actions: Actions = useMemo(
     () => ({
-      hasPartner: (id) => !!q.partnerBondOf(id),
-      hasParent: (id) => !!q.parentBondOf(id) || q.directParentsOf(id).length > 0,
-      updateNodeData: (id, data) => patch(id, (d) => ({ ...d, ...data })),
-      toggleCollapse: (id) => patch(id, (d) => ({ ...d, isCollapsed: !d.isCollapsed })),
+      hasPartner: (id) => !!queries.partnerBondOf(id),
+      hasParent: (id) => !!queries.parentBondOf(id) || queries.directParentsOf(id).length > 0,
+      updateNodeData: (id, data) => patch(id, (nodeData) => ({ ...nodeData, ...data })),
+      toggleCollapse: (id) => patch(id, (nodeData) => ({ ...nodeData, isCollapsed: !nodeData.isCollapsed })),
       canCollapse: (id) => {
+        const node = nodes.find((n) => n.id === id);
+        if (node?.data.kind === "bond") return false;
+        
         // A node can only collapse if it has at least 2 connections (incoming + outgoing)
-        const incoming = edges.filter((e) => e.target === id).length;
-        const outgoing = edges.filter((e) => e.source === id).length;
+        const incoming = edges.filter((edge) => edge.target === id).length;
+        const outgoing = edges.filter((edge) => edge.source === id).length;
         return incoming + outgoing >= 2;
       },
       getParentInfo: (id) => ({
-        hasBondParent: !!q.parentBondOf(id),
-        directParents: q.directParentsOf(id),
+        hasBondParent: !!queries.parentBondOf(id),
+        directParents: queries.directParentsOf(id),
       }),
-      getNode: (id) => nodes.find((n) => n.id === id),
-      rename: (id, label) => patch(id, (d) => ({ ...d, label })),
-      setGender: (id, gender) => patch(id, (d) => ({ ...d, gender })),
-      setProfileImage: (id, url) => patch(id, (d) => ({ ...d, profileImage: url })),
-      setMarriageDate: (id, marriageDate) => patch(id, (d) => ({ ...d, marriageDate })),
+      getNode: (id) => nodes.find((node) => node.id === id),
+      rename: (id, label) => patch(id, (nodeData) => ({ ...nodeData, label })),
+      setGender: (id, gender) => patch(id, (nodeData) => ({ ...nodeData, gender })),
+      setProfileImage: (id, url) => patch(id, (nodeData) => ({ ...nodeData, profileImage: url })),
+      setMarriageDate: (id, marriageDate) => patch(id, (nodeData) => ({ ...nodeData, marriageDate })),
       addMedia: (id, files) => {
         if (!files) return;
         const items: MediaItem[] = Array.from(files).map((f) => ({
@@ -772,20 +772,20 @@ function FamilyFlowInner() {
           url: URL.createObjectURL(f),
           name: f.name,
         }));
-        patch(id, (d) => ({ ...d, media: [...(d.media ?? []), ...items] }));
+        patch(id, (nodeData) => ({ ...nodeData, media: [...(nodeData.media ?? []), ...items] }));
       },
       removeMedia: (id, mediaId) =>
-        patch(id, (d) => ({ ...d, media: (d.media ?? []).filter((m) => m.id !== mediaId) })),
+        patch(id, (nodeData) => ({ ...nodeData, media: (nodeData.media ?? []).filter((mediaItem) => mediaItem.id !== mediaId) })),
       remove: (id) =>
-        commit((ns, es) => ({
-          nodes: ns.filter((n) => n.id !== id),
-          edges: es.filter((e) => e.source !== id && e.target !== id),
+        commit((currentNodes, currentEdges) => ({
+          nodes: currentNodes.filter((node) => node.id !== id),
+          edges: currentEdges.filter((edge) => edge.source !== id && edge.target !== id),
         })),
       addChild: (fromId) => {
-        const from = nodes.find((n) => n.id === fromId);
+        const from = nodes.find((node) => node.id === fromId);
         if (!from) return;
-        const bondId = from.data.kind === "person" ? q.partnerBondOf(fromId) : fromId;
-        const anchor = bondId ? nodes.find((n) => n.id === bondId)! : from;
+        const bondId = from.data.kind === "person" ? queries.partnerBondOf(fromId) : fromId;
+        const anchor = bondId ? nodes.find((node) => node.id === bondId)! : from;
         const childId = nextId();
         const child = personNode(
           childId,
@@ -793,56 +793,56 @@ function FamilyFlowInner() {
           anchor.position.y + 200,
           "Child",
         );
-        commit((ns, es) => ({ nodes: [...ns, child], edges: [...es, mkEdge(bondId ?? fromId, childId)] }));
+        commit((currentNodes, currentEdges) => ({ nodes: [...currentNodes, child], edges: [...currentEdges, mkEdge(bondId ?? fromId, childId)] }));
       },
       addSpouse: (personId) => {
-        if (q.partnerBondOf(personId)) return;
-        const p = nodes.find((n) => n.id === personId)!;
+        if (queries.partnerBondOf(personId)) return;
+        const person = nodes.find((node) => node.id === personId)!;
         const spouseId = nextId();
         const bondId = nextId();
         const spouseGender: Gender =
-          p.data.gender === "male" ? "female" : p.data.gender === "female" ? "male" : "other";
+          person.data.gender === "male" ? "female" : person.data.gender === "female" ? "male" : "other";
         const newNodes = [
-          personNode(spouseId, p.position.x + 340, p.position.y, "Spouse", spouseGender),
-          bondNode(bondId, p.position.x + 180, p.position.y + 130),
+          personNode(spouseId, person.position.x + 340, person.position.y, "Spouse", spouseGender),
+          bondNode(bondId, person.position.x + 180, person.position.y + 130),
         ];
-        commit((ns, es) => ({
-          nodes: [...ns, ...newNodes],
-          edges: [...es, mkEdge(personId, bondId), mkEdge(spouseId, bondId)],
+        commit((currentNodes, currentEdges) => ({
+          nodes: [...currentNodes, ...newNodes],
+          edges: [...currentEdges, mkEdge(personId, bondId), mkEdge(spouseId, bondId)],
         }));
       },
       addParent: (personId, label) => {
-        const p = nodes.find((n) => n.id === personId)!;
-        const parentBond = q.parentBondOf(personId);
+        const person = nodes.find((node) => node.id === personId)!;
+        const parentBond = queries.parentBondOf(personId);
         const newParentId = nextId();
         const offsetX = label === "Father" ? -180 : 180;
         const parent = personNode(
           newParentId,
-          p.position.x + offsetX,
-          p.position.y - 240,
+          person.position.x + offsetX,
+          person.position.y - 240,
           label,
           label === "Father" ? "male" : "female",
         );
 
         if (parentBond) {
-          commit((ns, es) => ({ nodes: [...ns, parent], edges: [...es, mkEdge(newParentId, parentBond)] }));
+          commit((currentNodes, currentEdges) => ({ nodes: [...currentNodes, parent], edges: [...currentEdges, mkEdge(newParentId, parentBond)] }));
           return;
         }
 
-        const directParents = q.directParentsOf(personId);
+        const directParents = queries.directParentsOf(personId);
         if (directParents.length === 1) {
           const existingParent = directParents[0];
-          const existing = nodes.find((n) => n.id === existingParent)!;
+          const existing = nodes.find((node) => node.id === existingParent)!;
           const bondId = nextId();
           const bond = bondNode(
             bondId,
             (existing.position.x + parent.position.x) / 2 + 40,
             existing.position.y + 130,
           );
-          commit((ns, es) => {
-            const filtered = es.filter((e) => !(e.source === existingParent && e.target === personId));
+          commit((currentNodes, currentEdges) => {
+            const filtered = currentEdges.filter((edge) => !(edge.source === existingParent && edge.target === personId));
             return {
-              nodes: [...ns, parent, bond],
+              nodes: [...currentNodes, parent, bond],
               edges: [
                 ...filtered,
                 mkEdge(existingParent, bondId),
@@ -854,20 +854,20 @@ function FamilyFlowInner() {
           return;
         }
 
-        commit((ns, es) => ({ nodes: [...ns, parent], edges: [...es, mkEdge(newParentId, personId)] }));
+        commit((currentNodes, currentEdges) => ({ nodes: [...currentNodes, parent], edges: [...currentEdges, mkEdge(newParentId, personId)] }));
       },
       addSibling: (personId) => {
-        const parentBond = q.parentBondOf(personId);
-        const directParents = q.directParentsOf(personId);
-        const p = nodes.find((n) => n.id === personId)!;
+        const parentBond = queries.parentBondOf(personId);
+        const directParents = queries.directParentsOf(personId);
+        const person = nodes.find((node) => node.id === personId)!;
         const source = parentBond ?? directParents[0];
         if (!source) return;
         const sibId = nextId();
-        const sib = personNode(sibId, p.position.x + 200, p.position.y, "Sibling");
-        commit((ns, es) => ({ nodes: [...ns, sib], edges: [...es, mkEdge(source, sibId)] }));
+        const sib = personNode(sibId, person.position.x + 200, person.position.y, "Sibling");
+        commit((currentNodes, currentEdges) => ({ nodes: [...currentNodes, sib], edges: [...currentEdges, mkEdge(source, sibId)] }));
       },
     }),
-    [nodes, q, commit, patch],
+    [nodes, queries, commit, patch],
   );
 
   const clearAll = () => {
@@ -875,10 +875,10 @@ function FamilyFlowInner() {
     setEdges([]);
   };
 
-  const runAutoLayout = () => setNodes((ns) => autoLayout(ns, edges));
+  const runAutoLayout = () => setNodes((currentNodes) => autoLayout(currentNodes, edges));
 
   const addStandalonePerson = () =>
-    setNodes((ns) => [...ns, personNode(nextId(), 100 + Math.random() * 300, 60, "Person")]);
+    setNodes((currentNodes) => [...currentNodes, personNode(nextId(), 100 + Math.random() * 300, 60, "Person")]);
 
   const exportImage = useCallback(() => {
     fitView({ padding: 0.2, duration: 100 });
@@ -887,10 +887,10 @@ function FamilyFlowInner() {
       if (!el) return;
       toPng(el, { backgroundColor: "#ffffff" })
         .then((dataUrl) => {
-          const a = document.createElement("a");
-          a.href = dataUrl;
-          a.download = "family-tree.png";
-          a.click();
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = "family-tree.png";
+          link.click();
         })
         .catch(console.error);
     }, 250);
@@ -905,17 +905,17 @@ function FamilyFlowInner() {
   }, [nodes, edges]);
 
   const importBackup = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = (fileEvent) => {
         try {
-          const data = JSON.parse(ev.target?.result as string);
+          const data = JSON.parse(fileEvent.target?.result as string);
           if (data.nodes && data.edges) {
             setNodes(data.nodes);
             setEdges(data.edges);
-            setTimeout(() => setNodes((ns) => autoLayout(ns, data.edges)), 50);
+            setTimeout(() => setNodes((currentNodes) => autoLayout(currentNodes, data.edges)), 50);
           }
         } catch (err) {
           console.error("Failed to parse backup file", err);
@@ -989,22 +989,22 @@ function FamilyFlowInner() {
         <div ref={wrapper} className="flex-1 relative">
           {(() => {
             const hiddenNodeIds = new Set<string>();
-            const collapsed = nodes.filter(n => n.data.isCollapsed).map(n => n.id);
+            const collapsed = nodes.filter(node => node.data.isCollapsed).map(node => node.id);
             
             // Build source→target adjacency for downward traversal
             const adjacency = new Map<string, string[]>();
-            edges.forEach(e => {
-              adjacency.set(e.source, [...(adjacency.get(e.source) || []), e.target]);
+            edges.forEach(edge => {
+              adjacency.set(edge.source, [...(adjacency.get(edge.source) || []), edge.target]);
             });
 
             // Build person→bond and bond→person[] maps for spouse lookup
-            const kindOf = new Map(nodes.map(n => [n.id, n.data.kind]));
+            const kindOf = new Map(nodes.map(node => [node.id, node.data.kind]));
             const personToBonds = new Map<string, string[]>();
             const bondToPartners = new Map<string, string[]>();
-            edges.forEach(e => {
-              if (kindOf.get(e.source) === "person" && kindOf.get(e.target) === "bond") {
-                personToBonds.set(e.source, [...(personToBonds.get(e.source) || []), e.target]);
-                bondToPartners.set(e.target, [...(bondToPartners.get(e.target) || []), e.source]);
+            edges.forEach(edge => {
+              if (kindOf.get(edge.source) === "person" && kindOf.get(edge.target) === "bond") {
+                personToBonds.set(edge.source, [...(personToBonds.get(edge.source) || []), edge.target]);
+                bondToPartners.set(edge.target, [...(bondToPartners.get(edge.target) || []), edge.source]);
               }
             });
 
@@ -1013,16 +1013,16 @@ function FamilyFlowInner() {
             // A node can only collapse if it has an incoming (top) edge.
             const collapsedSet = new Set(collapsed); // protect these from being hidden
             const seedIds: string[] = [];
-            collapsed.forEach(cid => {
-              const kind = kindOf.get(cid);
+            collapsed.forEach(collapsedId => {
+              const kind = kindOf.get(collapsedId);
               if (kind === "person") {
                 // Hide spouse(s) and bond(s) at the same level
-                const myBonds = personToBonds.get(cid) || [];
+                const myBonds = personToBonds.get(collapsedId) || [];
                 myBonds.forEach(bondId => {
                   seedIds.push(bondId); // hide the bond
                   // hide the partner(s)
                   (bondToPartners.get(bondId) || []).forEach(partner => {
-                    if (partner !== cid) seedIds.push(partner);
+                    if (partner !== collapsedId) seedIds.push(partner);
                   });
                   // hide the bond's children
                   (adjacency.get(bondId) || []).forEach(childId => {
@@ -1030,14 +1030,14 @@ function FamilyFlowInner() {
                   });
                 });
                 // Also hide direct person→person children (no bond)
-                (adjacency.get(cid) || []).forEach(targetId => {
+                (adjacency.get(collapsedId) || []).forEach(targetId => {
                   if (kindOf.get(targetId) === "person") {
                     seedIds.push(targetId);
                   }
                 });
               } else if (kind === "bond") {
                 // Collapsed bond: hide its children
-                (adjacency.get(cid) || []).forEach(childId => {
+                (adjacency.get(collapsedId) || []).forEach(childId => {
                   seedIds.push(childId);
                 });
               }
@@ -1053,10 +1053,10 @@ function FamilyFlowInner() {
             while (queue.length > 0) {
               const curr = queue.shift()!;
               // Follow all outgoing edges
-              (adjacency.get(curr) || []).forEach(t => {
-                if (!hiddenNodeIds.has(t) && !collapsedSet.has(t)) {
-                  hiddenNodeIds.add(t);
-                  queue.push(t);
+              (adjacency.get(curr) || []).forEach(targetId => {
+                if (!hiddenNodeIds.has(targetId) && !collapsedSet.has(targetId)) {
+                  hiddenNodeIds.add(targetId);
+                  queue.push(targetId);
                 }
               });
               // If a hidden person, also hide their spouse(s) and bond(s)
@@ -1076,8 +1076,8 @@ function FamilyFlowInner() {
               }
             }
 
-            const renderNodes = nodes.map(n => ({ ...n, hidden: hiddenNodeIds.has(n.id) }));
-            const renderEdges = edges.map(e => ({ ...e, hidden: hiddenNodeIds.has(e.source) || hiddenNodeIds.has(e.target) }));
+            const renderNodes = nodes.map(node => ({ ...node, hidden: hiddenNodeIds.has(node.id) }));
+            const renderEdges = edges.map(edge => ({ ...edge, hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target) }));
 
             return (
               <ReactFlow
@@ -1086,7 +1086,7 @@ function FamilyFlowInner() {
                 onNodesChange={onNodesChange}
                 onEdgesChange={(changes) => {
                   onEdgesChange(changes);
-                  queueMicrotask(() => setEdges((es) => reconcile(nodes, es)));
+                  queueMicrotask(() => setEdges((currentEdges) => reconcile(nodes, currentEdges)));
                 }}
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}

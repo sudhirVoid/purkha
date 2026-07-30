@@ -20,6 +20,7 @@ Purkha is a web-based application designed to help users visually build and mana
    - Child
 3. **Person Metadata:**
    - Name and Gender (Male, Female, Other) with distinct visual styling.
+   - **Profile Image (Avatar):** A dedicated, interactive profile picture displayed directly inside the node (with hover-to-upload capability).
    - Extensive biographical details: Address, Birth Place, Date of Birth, Death Date, Currently Residing At, and Other Details (accessible via a slide-out side panel).
    - Media attachments (Image, Video, Audio) viewable in a full-screen popup.
 4. **Relationship Metadata:**

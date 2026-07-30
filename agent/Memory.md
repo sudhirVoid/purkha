@@ -15,3 +15,4 @@
 - **AutoLayout Logic:** Spouses are grouped into "units" with their children to ensure they remain side-by-side during X-axis alignment, and bonds are re-centered in a second pass.
 - **Collapse/Minimize Logic:** Implemented using a BFS that determines what should be hidden. Crucially, a protected `collapsedSet` ensures that collapsed nodes remain visible, while their spouses and bonds are hidden alongside downward descendants. Collapse is disabled for nodes with < 2 connections.
 - **UI Components:** Utilized `shadcn/ui` (Radix) for drawers (`Sheet`) and popups (`Dialog`) to keep the canvas clean while offering detailed editing.
+- **Node Profiles:** Added a dedicated profile image (avatar) directly to the Person node, utilizing a hidden file input and base64 encoding to support local-first data storage.

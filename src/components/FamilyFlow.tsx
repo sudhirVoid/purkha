@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Camera } from "lucide-react";
 
 type Kind = "person" | "bond";
 type Gender = "male" | "female" | "other";
@@ -44,6 +44,7 @@ type FamilyNodeData = {
   deathDate?: string;
   otherDetails?: string;
   residingAt?: string;
+  profileImage?: string;
   isCollapsed?: boolean;
 };
 type FamilyNode = Node<FamilyNodeData>;
@@ -56,6 +57,7 @@ type Actions = {
   remove: (id: string) => void;
   rename: (id: string, label: string) => void;
   setGender: (id: string, g: Gender) => void;
+  setProfileImage: (id: string, url: string | undefined) => void;
   setMarriageDate: (id: string, d: string) => void;
   addMedia: (id: string, files: FileList | null) => void;
   removeMedia: (id: string, mediaId: string) => void;
@@ -384,6 +386,20 @@ function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
 
 function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   const gender = data.gender ?? "other";
+  const a = useActions();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      a.setProfileImage(id, ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
   return (
     <div
       className={`rounded-2xl border-2 px-5 py-3 shadow-sm font-medium text-sm text-center transition ${
@@ -395,9 +411,26 @@ function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
         <PersonToolbar id={id} data={data} />
       </NodeToolbar>
       <Handles />
-      <div className="flex items-center justify-center gap-1.5 relative">
-        <span className="text-xs opacity-70">{genderIcon[gender]}</span>
-        <span>{data.label}</span>
+      
+      <div className="flex flex-col items-center justify-center relative">
+        <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handleProfileImageChange} />
+        <div 
+          className="w-14 h-14 rounded-full border-2 bg-white flex items-center justify-center relative overflow-hidden mb-2 group cursor-pointer"
+          onClick={() => fileRef.current?.click()}
+        >
+          {data.profileImage ? (
+            <img src={data.profileImage} alt={data.label} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl opacity-40">{genderIcon[gender]}</span>
+          )}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Camera className="w-5 h-5 text-white" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-1.5 relative">
+          <span>{data.label}</span>
+        </div>
       </div>
       <MediaStrip nodeId={id} media={data.media ?? []} />
       <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
@@ -729,6 +762,7 @@ function FamilyFlowInner() {
       getNode: (id) => nodes.find((n) => n.id === id),
       rename: (id, label) => patch(id, (d) => ({ ...d, label })),
       setGender: (id, gender) => patch(id, (d) => ({ ...d, gender })),
+      setProfileImage: (id, url) => patch(id, (d) => ({ ...d, profileImage: url })),
       setMarriageDate: (id, marriageDate) => patch(id, (d) => ({ ...d, marriageDate })),
       addMedia: (id, files) => {
         if (!files) return;

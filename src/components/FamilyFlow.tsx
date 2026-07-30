@@ -61,6 +61,7 @@ type Actions = {
   hasParent: (id: string) => boolean;
   updateNodeData: (id: string, data: Partial<FamilyNodeData>) => void;
   toggleCollapse: (id: string) => void;
+  canCollapse: (id: string) => boolean;
   getParentInfo: (id: string) => { hasBondParent: boolean; directParents: string[] };
   getNode: (id: string) => FamilyNode | undefined;
 };
@@ -313,6 +314,7 @@ function formatDate(d?: string) {
 
 function CollapseBtn({ id, isCollapsed }: { id: string; isCollapsed?: boolean }) {
   const a = useActions();
+  if (!a.canCollapse(id)) return null;
   return (
     <button
       onClick={(e) => {
@@ -490,6 +492,25 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   };
   persons.forEach((p) => compute(p, new Set()));
 
+  // Ensure partners in a bond share the same level (max of all partners).
+  // A spouse added to a child has no parent, so it defaults to level 0.
+  // This pass corrects that by matching the partner's level.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    bonds.forEach((b) => {
+      const parts = partnersOf.get(b) || [];
+      if (parts.length < 2) return;
+      const maxLvl = Math.max(...parts.map((p) => level.get(p) ?? 0));
+      parts.forEach((p) => {
+        if ((level.get(p) ?? 0) < maxLvl) {
+          level.set(p, maxLvl);
+          changed = true;
+        }
+      });
+    });
+  }
+
   const LEVEL_H = 240;
   const NODE_GAP = 60;
   const NODE_W = 170;
@@ -551,13 +572,55 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   childrenOfBond.forEach((kids, bondId) => {
     const bp = positions.get(bondId);
     if (!bp) return;
-    const sorted = [...kids].sort((a, b) => (positions.get(a)?.x ?? 0) - (positions.get(b)?.x ?? 0));
     const step = NODE_W + NODE_GAP;
-    const total = (sorted.length - 1) * step;
-    sorted.forEach((k, i) => {
-      const cur = positions.get(k);
-      positions.set(k, { x: bp.x - total / 2 + i * step, y: cur?.y ?? bp.y + LEVEL_H - BOND_DY });
+    
+    // Group kids and their spouses into units
+    const units = kids.map((k) => {
+      const spouseBonds = bonds.filter((b) => (partnersOf.get(b) || []).includes(k));
+      const spouses = spouseBonds
+        .flatMap((b) => partnersOf.get(b) || [])
+        .filter((s) => s !== k && level.get(s) === level.get(k));
+      
+      const allMembers = [k, ...spouses].sort(
+        (a, b) => (positions.get(a)?.x ?? 0) - (positions.get(b)?.x ?? 0)
+      );
+      
+      return {
+        members: allMembers,
+        width: allMembers.length * step,
+      };
     });
+
+    units.sort((a, b) => {
+      const avgA = a.members.reduce((sum, m) => sum + (positions.get(m)?.x ?? 0), 0) / a.members.length;
+      const avgB = b.members.reduce((sum, m) => sum + (positions.get(m)?.x ?? 0), 0) / b.members.length;
+      return avgA - avgB;
+    });
+
+    const totalWidth = units.reduce((sum, u) => sum + u.width, 0);
+    let startX = bp.x - totalWidth / 2;
+
+    units.forEach((u) => {
+      u.members.forEach((m, i) => {
+        const cur = positions.get(m);
+        positions.set(m, {
+          x: startX + i * step + step / 2,
+          y: cur?.y ?? bp.y + LEVEL_H - BOND_DY,
+        });
+      });
+      startX += u.width;
+    });
+  });
+
+  // Re-adjust bonds after children and their spouses have been moved
+  bonds.forEach((b) => {
+    const parts = partnersOf.get(b) || [];
+    const pts = parts.map((p) => positions.get(p)).filter(Boolean) as { x: number; y: number }[];
+    if (pts.length) {
+      const avgX = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const maxY = Math.max(...pts.map((p) => p.y));
+      positions.set(b, { x: avgX + 30, y: maxY + BOND_DY });
+    }
   });
 
   let orphanY = 0;
@@ -649,6 +712,10 @@ function FamilyFlowInner() {
       hasParent: (id) => !!q.parentBondOf(id) || q.directParentsOf(id).length > 0,
       updateNodeData: (id, data) => patch(id, (d) => ({ ...d, ...data })),
       toggleCollapse: (id) => patch(id, (d) => ({ ...d, isCollapsed: !d.isCollapsed })),
+      canCollapse: (id) => {
+        // A node can only collapse if it has an incoming (top) connection — it's not a root node
+        return !!q.parentBondOf(id) || q.directParentsOf(id).length > 0;
+      },
       getParentInfo: (id) => ({
         hasBondParent: !!q.parentBondOf(id),
         directParents: q.directParentsOf(id),
@@ -812,21 +879,89 @@ function FamilyFlowInner() {
             const hiddenNodeIds = new Set<string>();
             const collapsed = nodes.filter(n => n.data.isCollapsed).map(n => n.id);
             
+            // Build source→target adjacency for downward traversal
             const adjacency = new Map<string, string[]>();
             edges.forEach(e => {
               adjacency.set(e.source, [...(adjacency.get(e.source) || []), e.target]);
             });
 
-            const queue = [...collapsed];
+            // Build person→bond and bond→person[] maps for spouse lookup
+            const kindOf = new Map(nodes.map(n => [n.id, n.data.kind]));
+            const personToBonds = new Map<string, string[]>();
+            const bondToPartners = new Map<string, string[]>();
+            edges.forEach(e => {
+              if (kindOf.get(e.source) === "person" && kindOf.get(e.target) === "bond") {
+                personToBonds.set(e.source, [...(personToBonds.get(e.source) || []), e.target]);
+                bondToPartners.set(e.target, [...(bondToPartners.get(e.target) || []), e.source]);
+              }
+            });
+
+            // When a person is collapsed: hide spouse, bond, and all children below.
+            // Only the collapsed node itself stays visible.
+            // A node can only collapse if it has an incoming (top) edge.
+            const collapsedSet = new Set(collapsed); // protect these from being hidden
+            const seedIds: string[] = [];
+            collapsed.forEach(cid => {
+              const kind = kindOf.get(cid);
+              if (kind === "person") {
+                // Hide spouse(s) and bond(s) at the same level
+                const myBonds = personToBonds.get(cid) || [];
+                myBonds.forEach(bondId => {
+                  seedIds.push(bondId); // hide the bond
+                  // hide the partner(s)
+                  (bondToPartners.get(bondId) || []).forEach(partner => {
+                    if (partner !== cid) seedIds.push(partner);
+                  });
+                  // hide the bond's children
+                  (adjacency.get(bondId) || []).forEach(childId => {
+                    seedIds.push(childId);
+                  });
+                });
+                // Also hide direct person→person children (no bond)
+                (adjacency.get(cid) || []).forEach(targetId => {
+                  if (kindOf.get(targetId) === "person") {
+                    seedIds.push(targetId);
+                  }
+                });
+              } else if (kind === "bond") {
+                // Collapsed bond: hide its children
+                (adjacency.get(cid) || []).forEach(childId => {
+                  seedIds.push(childId);
+                });
+              }
+            });
+
+            // Add all seeds to hidden set (but never hide a collapsed node)
+            seedIds.forEach(id => {
+              if (!collapsedSet.has(id)) hiddenNodeIds.add(id);
+            });
+
+            // BFS from seeds: hide everything downstream + spouses of hidden nodes
+            const queue = seedIds.filter(id => hiddenNodeIds.has(id));
             while (queue.length > 0) {
               const curr = queue.shift()!;
-              const children = adjacency.get(curr) || [];
-              children.forEach(c => {
-                if (!hiddenNodeIds.has(c)) {
-                  hiddenNodeIds.add(c);
-                  queue.push(c);
+              // Follow all outgoing edges
+              (adjacency.get(curr) || []).forEach(t => {
+                if (!hiddenNodeIds.has(t) && !collapsedSet.has(t)) {
+                  hiddenNodeIds.add(t);
+                  queue.push(t);
                 }
               });
+              // If a hidden person, also hide their spouse(s) and bond(s)
+              if (kindOf.get(curr) === "person") {
+                (personToBonds.get(curr) || []).forEach(bondId => {
+                  if (!hiddenNodeIds.has(bondId) && !collapsedSet.has(bondId)) {
+                    hiddenNodeIds.add(bondId);
+                    queue.push(bondId);
+                  }
+                  (bondToPartners.get(bondId) || []).forEach(partner => {
+                    if (partner !== curr && !hiddenNodeIds.has(partner) && !collapsedSet.has(partner)) {
+                      hiddenNodeIds.add(partner);
+                      queue.push(partner);
+                    }
+                  });
+                });
+              }
             }
 
             const renderNodes = nodes.map(n => ({ ...n, hidden: hiddenNodeIds.has(n.id) }));

@@ -73,13 +73,16 @@ type Actions = {
 const ActionsContext = createContext<Actions | null>(null);
 const useActions = () => useContext(ActionsContext)!;
 
+const genderIcon: Record<Gender, string> = { male: "♂", female: "♀", other: "⚧" };
+
+// Harmonized with the lokta-texture background (#fcf2e4) using the Heirloom theme palette
 const genderStyles: Record<Gender, string> = {
-  male: "bg-[hsl(210_90%_96%)] border-[hsl(210_80%_55%)] text-foreground",
-  female: "bg-[hsl(330_90%_97%)] border-[hsl(330_70%_60%)] text-foreground",
-  other: "bg-card border-foreground/70 text-foreground",
+  male: "bg-[#f2f6fa] text-[#101d28] border-[#bbc8d7]", // primary-fixed tint
+  female: "bg-[#fff5f0] text-[#341100] border-[#ffb692]", // tertiary-fixed tint
+  other: "bg-[#f2f9f4] text-[#092011] border-[#b2cdb6]", // secondary-fixed tint
 };
 
-const genderIcon: Record<Gender, string> = { male: "♂", female: "♀", other: "⚧" };
+const kindStyles: Record<MediaKind, string> = { image: "image", video: "video", audio: "audio" };
 
 function mediaKindOf(file: File): MediaKind {
   if (file.type.startsWith("video")) return "video";
@@ -929,75 +932,35 @@ function FamilyFlowInner() {
 
   return (
     <ActionsContext.Provider value={actions}>
-      <div className="h-screen w-screen flex flex-col bg-background">
-        <header className="flex items-center justify-between px-6 py-3 border-b bg-card">
-          <div>
-            <h1 className="text-lg font-semibold" style={{ fontFamily: "'Kalam', cursive" }}>
-              Family Relationship Builder
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Click a node → edit name, gender, media and relationships right on the node.
-            </p>
+      <div className="w-full h-full flex flex-col bg-transparent relative">
+        {/* Central Add Action (From HTML) mapping to our actions */}
+        <div className="absolute top-8 right-8 z-30 flex space-x-2">
+          <button onClick={addStandalonePerson} className="terracotta-btn px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg">
+            <span className="material-symbols-outlined">account_tree</span>
+            <span className="font-label-sm uppercase tracking-wider">Add Root Ancestor</span>
+          </button>
+          
+          {/* Keep our utility buttons in a floating container */}
+          <div className="floating-ui bg-surface-bright/90 rounded-full flex p-1 border border-outline-variant ml-4">
+            <button onClick={runAutoLayout} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Auto Layout</button>
+            <button onClick={exportImage} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Export Image</button>
+            <button onClick={exportBackup} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Save</button>
+            <button onClick={() => fileInputRef.current?.click()} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Load</button>
+            <button onClick={clearAll} className="px-3 py-1 text-xs rounded-full hover:bg-error-container text-error transition-colors font-label-sm uppercase">Clear</button>
+            <input type="file" accept="application/json" className="hidden" ref={fileInputRef} onChange={importBackup} />
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={addStandalonePerson}
-              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
-            >
-              + Person
-            </button>
-            <button
-              onClick={runAutoLayout}
-              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
-            >
-              Auto layout
-            </button>
-            <button
-              onClick={exportImage}
-              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
-            >
-              Export Image
-            </button>
-            <button
-              onClick={exportBackup}
-              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
-            >
-              Download Tree
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-1.5 text-sm rounded-md border bg-background hover:bg-accent transition"
-            >
-              Upload Tree
-            </button>
-            <input
-              type="file"
-              accept="application/json"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={importBackup}
-            />
-            <button
-              onClick={clearAll}
-              className="px-3 py-1.5 text-sm rounded-md border border-destructive text-destructive hover:bg-destructive/10 transition"
-            >
-              Clear
-            </button>
-          </div>
-        </header>
+        </div>
 
-        <div ref={wrapper} className="flex-1 relative">
+        <div ref={wrapper} className="flex-1 relative lokta-texture">
           {(() => {
             const hiddenNodeIds = new Set<string>();
             const collapsed = nodes.filter(node => node.data.isCollapsed).map(node => node.id);
             
-            // Build source→target adjacency for downward traversal
             const adjacency = new Map<string, string[]>();
             edges.forEach(edge => {
               adjacency.set(edge.source, [...(adjacency.get(edge.source) || []), edge.target]);
             });
 
-            // Build person→bond and bond→person[] maps for spouse lookup
             const kindOf = new Map(nodes.map(node => [node.id, node.data.kind]));
             const personToBonds = new Map<string, string[]>();
             const bondToPartners = new Map<string, string[]>();
@@ -1008,58 +971,46 @@ function FamilyFlowInner() {
               }
             });
 
-            // When a person is collapsed: hide spouse, bond, and all children below.
-            // Only the collapsed node itself stays visible.
-            // A node can only collapse if it has an incoming (top) edge.
-            const collapsedSet = new Set(collapsed); // protect these from being hidden
+            const collapsedSet = new Set(collapsed);
             const seedIds: string[] = [];
             collapsed.forEach(collapsedId => {
               const kind = kindOf.get(collapsedId);
               if (kind === "person") {
-                // Hide spouse(s) and bond(s) at the same level
                 const myBonds = personToBonds.get(collapsedId) || [];
                 myBonds.forEach(bondId => {
-                  seedIds.push(bondId); // hide the bond
-                  // hide the partner(s)
+                  seedIds.push(bondId);
                   (bondToPartners.get(bondId) || []).forEach(partner => {
                     if (partner !== collapsedId) seedIds.push(partner);
                   });
-                  // hide the bond's children
                   (adjacency.get(bondId) || []).forEach(childId => {
                     seedIds.push(childId);
                   });
                 });
-                // Also hide direct person→person children (no bond)
                 (adjacency.get(collapsedId) || []).forEach(targetId => {
                   if (kindOf.get(targetId) === "person") {
                     seedIds.push(targetId);
                   }
                 });
               } else if (kind === "bond") {
-                // Collapsed bond: hide its children
                 (adjacency.get(collapsedId) || []).forEach(childId => {
                   seedIds.push(childId);
                 });
               }
             });
 
-            // Add all seeds to hidden set (but never hide a collapsed node)
             seedIds.forEach(id => {
               if (!collapsedSet.has(id)) hiddenNodeIds.add(id);
             });
 
-            // BFS from seeds: hide everything downstream + spouses of hidden nodes
             const queue = seedIds.filter(id => hiddenNodeIds.has(id));
             while (queue.length > 0) {
               const curr = queue.shift()!;
-              // Follow all outgoing edges
               (adjacency.get(curr) || []).forEach(targetId => {
                 if (!hiddenNodeIds.has(targetId) && !collapsedSet.has(targetId)) {
                   hiddenNodeIds.add(targetId);
                   queue.push(targetId);
                 }
               });
-              // If a hidden person, also hide their spouse(s) and bond(s)
               if (kindOf.get(curr) === "person") {
                 (personToBonds.get(curr) || []).forEach(bondId => {
                   if (!hiddenNodeIds.has(bondId) && !collapsedSet.has(bondId)) {
@@ -1092,10 +1043,9 @@ function FamilyFlowInner() {
                 nodeTypes={nodeTypes}
                 fitView
                 deleteKeyCode={["Delete"]}
+                className="z-10"
               >
-                <Background gap={20} size={1} />
-                <Controls />
-                <MiniMap pannable zoomable />
+                <Controls position="bottom-right" className="floating-ui border border-outline-variant bg-surface-bright/90" showInteractive={false} />
               </ReactFlow>
             );
           })()}

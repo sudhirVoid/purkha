@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import FamilyFlow from "@/components/FamilyFlow";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 export const Route = createFileRoute("/builder")({
   head: () => ({
@@ -12,5 +13,9 @@ export const Route = createFileRoute("/builder")({
 });
 
 function Builder() {
-  return <FamilyFlow />;
+  return (
+    <AppLayout>
+      <FamilyFlow />
+    </AppLayout>
+  );
 }

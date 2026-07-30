@@ -296,7 +296,7 @@ function BondToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
   );
 }
 
-const handleCls = "!bg-foreground !w-2 !h-2";
+const handleCls = "!opacity-0 pointer-events-none";
 
 function Handles() {
   return (

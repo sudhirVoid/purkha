@@ -18,6 +18,12 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 type Kind = "person" | "bond";
 type Gender = "male" | "female" | "other";
@@ -30,6 +36,13 @@ type FamilyNodeData = {
   gender?: Gender;
   media?: MediaItem[];
   marriageDate?: string;
+  address?: string;
+  birthPlace?: string;
+  dob?: string;
+  deathDate?: string;
+  otherDetails?: string;
+  residingAt?: string;
+  isCollapsed?: boolean;
 };
 type FamilyNode = Node<FamilyNodeData>;
 
@@ -46,6 +59,11 @@ type Actions = {
   removeMedia: (id: string, mediaId: string) => void;
   hasPartner: (id: string) => boolean;
   hasParent: (id: string) => boolean;
+  updateNodeData: (id: string, data: Partial<FamilyNodeData>) => void;
+  toggleCollapse: (id: string) => void;
+  canCollapse: (id: string) => boolean;
+  getParentInfo: (id: string) => { hasBondParent: boolean; directParents: string[] };
+  getNode: (id: string) => FamilyNode | undefined;
 };
 
 const ActionsContext = createContext<Actions | null>(null);
@@ -71,27 +89,46 @@ function MediaStrip({ nodeId, media }: { nodeId: string; media: MediaItem[] }) {
   return (
     <div className="mt-2 flex flex-wrap gap-1.5 justify-center max-w-[220px]">
       {media.map((m) => (
-        <div key={m.id} className="relative group">
-          {m.kind === "image" && (
-            <img src={m.url} alt={m.name} className="h-10 w-10 rounded-md object-cover border" />
-          )}
-          {m.kind === "video" && (
-            <video src={m.url} className="h-10 w-10 rounded-md object-cover border" muted controls={false} />
-          )}
-          {m.kind === "audio" && (
-            <div className="h-10 w-10 rounded-md border grid place-items-center text-base bg-muted">♪</div>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              a.removeMedia(nodeId, m.id);
-            }}
-            className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-none opacity-0 group-hover:opacity-100 transition"
-            title="Remove"
-          >
-            ×
-          </button>
-        </div>
+        <Dialog key={m.id}>
+          <div className="relative group">
+            <DialogTrigger asChild>
+              <div className="cursor-pointer">
+                {m.kind === "image" && (
+                  <img src={m.url} alt={m.name} className="h-10 w-10 rounded-md object-cover border" />
+                )}
+                {m.kind === "video" && (
+                  <video src={m.url} className="h-10 w-10 rounded-md object-cover border" muted controls={false} />
+                )}
+                {m.kind === "audio" && (
+                  <div className="h-10 w-10 rounded-md border grid place-items-center text-base bg-muted">♪</div>
+                )}
+              </div>
+            </DialogTrigger>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                a.removeMedia(nodeId, m.id);
+              }}
+              className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-none opacity-0 group-hover:opacity-100 transition z-10"
+              title="Remove"
+            >
+              ×
+            </button>
+          </div>
+          <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center bg-black/95 border-none p-4 sm:p-10">
+            <DialogTitle className="sr-only">{m.name}</DialogTitle>
+            <DialogDescription className="sr-only">Media viewer</DialogDescription>
+            {m.kind === "image" && (
+              <img src={m.url} alt={m.name} className="max-w-full max-h-[80vh] object-contain rounded-md" />
+            )}
+            {m.kind === "video" && (
+              <video src={m.url} className="max-w-full max-h-[80vh] rounded-md" controls autoPlay />
+            )}
+            {m.kind === "audio" && (
+              <audio src={m.url} controls className="w-full max-w-md mt-8" autoPlay />
+            )}
+          </DialogContent>
+        </Dialog>
       ))}
     </div>
   );
@@ -123,6 +160,11 @@ function ToolbarBtn({
 function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
   const a = useActions();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const parentInfo = a.getParentInfo(id);
+  const canAddFather = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => a.getNode(pid)?.data.gender === "male");
+  const canAddMother = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => a.getNode(pid)?.data.gender === "female");
+
   return (
     <div className="rounded-xl border bg-card shadow-lg p-2 space-y-2 w-[240px]">
       <input
@@ -145,8 +187,8 @@ function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
         ))}
       </div>
       <div className="grid grid-cols-2 gap-1">
-        <ToolbarBtn onClick={() => a.addParent(id, "Father")}>+ Father</ToolbarBtn>
-        <ToolbarBtn onClick={() => a.addParent(id, "Mother")}>+ Mother</ToolbarBtn>
+        <ToolbarBtn onClick={() => a.addParent(id, "Father")} disabled={!canAddFather} title={!canAddFather ? "Father already exists" : ""}>+ Father</ToolbarBtn>
+        <ToolbarBtn onClick={() => a.addParent(id, "Mother")} disabled={!canAddMother} title={!canAddMother ? "Mother already exists" : ""}>+ Mother</ToolbarBtn>
         <ToolbarBtn
           onClick={() => a.addSpouse(id)}
           disabled={a.hasPartner(id)}
@@ -163,6 +205,49 @@ function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
         </ToolbarBtn>
         <ToolbarBtn onClick={() => a.addChild(id)}>+ Child</ToolbarBtn>
         <ToolbarBtn onClick={() => fileRef.current?.click()}>+ Media</ToolbarBtn>
+        <Sheet>
+          <SheetTrigger asChild>
+            <div className="col-span-2">
+              <ToolbarBtn onClick={() => {}} title="Edit details">Edit Details</ToolbarBtn>
+            </div>
+          </SheetTrigger>
+          <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Edit Details</SheetTitle>
+              <SheetDescription>Update personal information for {data.label || "this member"}.</SheetDescription>
+            </SheetHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor={`name-${id}`}>Name (Required)</Label>
+                <Input id={`name-${id}`} value={data.label} onChange={(e) => a.updateNodeData(id, { label: e.target.value })} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`dob-${id}`}>Date of Birth</Label>
+                <Input id={`dob-${id}`} type="date" value={data.dob || ""} onChange={(e) => a.updateNodeData(id, { dob: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`birthPlace-${id}`}>Birth Place</Label>
+                <Input id={`birthPlace-${id}`} value={data.birthPlace || ""} onChange={(e) => a.updateNodeData(id, { birthPlace: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`deathDate-${id}`}>Death Date (if deceased)</Label>
+                <Input id={`deathDate-${id}`} type="date" value={data.deathDate || ""} onChange={(e) => a.updateNodeData(id, { deathDate: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`address-${id}`}>Address</Label>
+                <Textarea id={`address-${id}`} value={data.address || ""} onChange={(e) => a.updateNodeData(id, { address: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`residingAt-${id}`}>Currently Residing At</Label>
+                <Input id={`residingAt-${id}`} value={data.residingAt || ""} onChange={(e) => a.updateNodeData(id, { residingAt: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`otherDetails-${id}`}>Other Details</Label>
+                <Textarea id={`otherDetails-${id}`} value={data.otherDetails || ""} onChange={(e) => a.updateNodeData(id, { otherDetails: e.target.value })} />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
       <input
         ref={fileRef}
@@ -227,6 +312,23 @@ function formatDate(d?: string) {
   return dt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
+function CollapseBtn({ id, isCollapsed }: { id: string; isCollapsed?: boolean }) {
+  const a = useActions();
+  if (!a.canCollapse(id)) return null;
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        a.toggleCollapse(id);
+      }}
+      className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-background border rounded-full p-0.5 shadow-sm hover:bg-accent z-10 text-muted-foreground transition-transform hover:scale-110"
+      title={isCollapsed ? "Expand hierarchy" : "Collapse hierarchy"}
+    >
+      {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+    </button>
+  );
+}
+
 function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   const pretty = formatDate(data.marriageDate);
   return (
@@ -267,10 +369,11 @@ function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
         </div>
       </div>
       <div
-        className="-mt-1 px-2 py-0.5 rounded-full border bg-card text-[10px] font-medium shadow-sm whitespace-nowrap"
+        className="-mt-1 px-2 py-0.5 rounded-full border bg-card text-[10px] font-medium shadow-sm whitespace-nowrap relative"
         style={{ fontFamily: "'Kalam', cursive" }}
       >
         {pretty ?? "Set date"}
+        <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
       </div>
       <Handles />
     </div>
@@ -290,11 +393,12 @@ function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
         <PersonToolbar id={id} data={data} />
       </NodeToolbar>
       <Handles />
-      <div className="flex items-center justify-center gap-1.5">
+      <div className="flex items-center justify-center gap-1.5 relative">
         <span className="text-xs opacity-70">{genderIcon[gender]}</span>
         <span>{data.label}</span>
       </div>
       <MediaStrip nodeId={id} media={data.media ?? []} />
+      <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
     </div>
   );
 }
@@ -388,6 +492,25 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   };
   persons.forEach((p) => compute(p, new Set()));
 
+  // Ensure partners in a bond share the same level (max of all partners).
+  // A spouse added to a child has no parent, so it defaults to level 0.
+  // This pass corrects that by matching the partner's level.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    bonds.forEach((b) => {
+      const parts = partnersOf.get(b) || [];
+      if (parts.length < 2) return;
+      const maxLvl = Math.max(...parts.map((p) => level.get(p) ?? 0));
+      parts.forEach((p) => {
+        if ((level.get(p) ?? 0) < maxLvl) {
+          level.set(p, maxLvl);
+          changed = true;
+        }
+      });
+    });
+  }
+
   const LEVEL_H = 240;
   const NODE_GAP = 60;
   const NODE_W = 170;
@@ -449,13 +572,55 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   childrenOfBond.forEach((kids, bondId) => {
     const bp = positions.get(bondId);
     if (!bp) return;
-    const sorted = [...kids].sort((a, b) => (positions.get(a)?.x ?? 0) - (positions.get(b)?.x ?? 0));
     const step = NODE_W + NODE_GAP;
-    const total = (sorted.length - 1) * step;
-    sorted.forEach((k, i) => {
-      const cur = positions.get(k);
-      positions.set(k, { x: bp.x - total / 2 + i * step, y: cur?.y ?? bp.y + LEVEL_H - BOND_DY });
+    
+    // Group kids and their spouses into units
+    const units = kids.map((k) => {
+      const spouseBonds = bonds.filter((b) => (partnersOf.get(b) || []).includes(k));
+      const spouses = spouseBonds
+        .flatMap((b) => partnersOf.get(b) || [])
+        .filter((s) => s !== k && level.get(s) === level.get(k));
+      
+      const allMembers = [k, ...spouses].sort(
+        (a, b) => (positions.get(a)?.x ?? 0) - (positions.get(b)?.x ?? 0)
+      );
+      
+      return {
+        members: allMembers,
+        width: allMembers.length * step,
+      };
     });
+
+    units.sort((a, b) => {
+      const avgA = a.members.reduce((sum, m) => sum + (positions.get(m)?.x ?? 0), 0) / a.members.length;
+      const avgB = b.members.reduce((sum, m) => sum + (positions.get(m)?.x ?? 0), 0) / b.members.length;
+      return avgA - avgB;
+    });
+
+    const totalWidth = units.reduce((sum, u) => sum + u.width, 0);
+    let startX = bp.x - totalWidth / 2;
+
+    units.forEach((u) => {
+      u.members.forEach((m, i) => {
+        const cur = positions.get(m);
+        positions.set(m, {
+          x: startX + i * step + step / 2,
+          y: cur?.y ?? bp.y + LEVEL_H - BOND_DY,
+        });
+      });
+      startX += u.width;
+    });
+  });
+
+  // Re-adjust bonds after children and their spouses have been moved
+  bonds.forEach((b) => {
+    const parts = partnersOf.get(b) || [];
+    const pts = parts.map((p) => positions.get(p)).filter(Boolean) as { x: number; y: number }[];
+    if (pts.length) {
+      const avgX = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const maxY = Math.max(...pts.map((p) => p.y));
+      positions.set(b, { x: avgX + 30, y: maxY + BOND_DY });
+    }
   });
 
   let orphanY = 0;
@@ -545,6 +710,19 @@ function FamilyFlowInner() {
     () => ({
       hasPartner: (id) => !!q.partnerBondOf(id),
       hasParent: (id) => !!q.parentBondOf(id) || q.directParentsOf(id).length > 0,
+      updateNodeData: (id, data) => patch(id, (d) => ({ ...d, ...data })),
+      toggleCollapse: (id) => patch(id, (d) => ({ ...d, isCollapsed: !d.isCollapsed })),
+      canCollapse: (id) => {
+        // A node can only collapse if it has at least 2 connections (incoming + outgoing)
+        const incoming = edges.filter((e) => e.target === id).length;
+        const outgoing = edges.filter((e) => e.source === id).length;
+        return incoming + outgoing >= 2;
+      },
+      getParentInfo: (id) => ({
+        hasBondParent: !!q.parentBondOf(id),
+        directParents: q.directParentsOf(id),
+      }),
+      getNode: (id) => nodes.find((n) => n.id === id),
       rename: (id, label) => patch(id, (d) => ({ ...d, label })),
       setGender: (id, gender) => patch(id, (d) => ({ ...d, gender })),
       setMarriageDate: (id, marriageDate) => patch(id, (d) => ({ ...d, marriageDate })),
@@ -699,23 +877,118 @@ function FamilyFlowInner() {
         </header>
 
         <div ref={wrapper} className="flex-1 relative">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={(changes) => {
-              onEdgesChange(changes);
-              queueMicrotask(() => setEdges((es) => reconcile(nodes, es)));
-            }}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            fitView
-            deleteKeyCode={["Delete"]}
-          >
-            <Background gap={20} size={1} />
-            <Controls />
-            <MiniMap pannable zoomable />
-          </ReactFlow>
+          {(() => {
+            const hiddenNodeIds = new Set<string>();
+            const collapsed = nodes.filter(n => n.data.isCollapsed).map(n => n.id);
+            
+            // Build source→target adjacency for downward traversal
+            const adjacency = new Map<string, string[]>();
+            edges.forEach(e => {
+              adjacency.set(e.source, [...(adjacency.get(e.source) || []), e.target]);
+            });
+
+            // Build person→bond and bond→person[] maps for spouse lookup
+            const kindOf = new Map(nodes.map(n => [n.id, n.data.kind]));
+            const personToBonds = new Map<string, string[]>();
+            const bondToPartners = new Map<string, string[]>();
+            edges.forEach(e => {
+              if (kindOf.get(e.source) === "person" && kindOf.get(e.target) === "bond") {
+                personToBonds.set(e.source, [...(personToBonds.get(e.source) || []), e.target]);
+                bondToPartners.set(e.target, [...(bondToPartners.get(e.target) || []), e.source]);
+              }
+            });
+
+            // When a person is collapsed: hide spouse, bond, and all children below.
+            // Only the collapsed node itself stays visible.
+            // A node can only collapse if it has an incoming (top) edge.
+            const collapsedSet = new Set(collapsed); // protect these from being hidden
+            const seedIds: string[] = [];
+            collapsed.forEach(cid => {
+              const kind = kindOf.get(cid);
+              if (kind === "person") {
+                // Hide spouse(s) and bond(s) at the same level
+                const myBonds = personToBonds.get(cid) || [];
+                myBonds.forEach(bondId => {
+                  seedIds.push(bondId); // hide the bond
+                  // hide the partner(s)
+                  (bondToPartners.get(bondId) || []).forEach(partner => {
+                    if (partner !== cid) seedIds.push(partner);
+                  });
+                  // hide the bond's children
+                  (adjacency.get(bondId) || []).forEach(childId => {
+                    seedIds.push(childId);
+                  });
+                });
+                // Also hide direct person→person children (no bond)
+                (adjacency.get(cid) || []).forEach(targetId => {
+                  if (kindOf.get(targetId) === "person") {
+                    seedIds.push(targetId);
+                  }
+                });
+              } else if (kind === "bond") {
+                // Collapsed bond: hide its children
+                (adjacency.get(cid) || []).forEach(childId => {
+                  seedIds.push(childId);
+                });
+              }
+            });
+
+            // Add all seeds to hidden set (but never hide a collapsed node)
+            seedIds.forEach(id => {
+              if (!collapsedSet.has(id)) hiddenNodeIds.add(id);
+            });
+
+            // BFS from seeds: hide everything downstream + spouses of hidden nodes
+            const queue = seedIds.filter(id => hiddenNodeIds.has(id));
+            while (queue.length > 0) {
+              const curr = queue.shift()!;
+              // Follow all outgoing edges
+              (adjacency.get(curr) || []).forEach(t => {
+                if (!hiddenNodeIds.has(t) && !collapsedSet.has(t)) {
+                  hiddenNodeIds.add(t);
+                  queue.push(t);
+                }
+              });
+              // If a hidden person, also hide their spouse(s) and bond(s)
+              if (kindOf.get(curr) === "person") {
+                (personToBonds.get(curr) || []).forEach(bondId => {
+                  if (!hiddenNodeIds.has(bondId) && !collapsedSet.has(bondId)) {
+                    hiddenNodeIds.add(bondId);
+                    queue.push(bondId);
+                  }
+                  (bondToPartners.get(bondId) || []).forEach(partner => {
+                    if (partner !== curr && !hiddenNodeIds.has(partner) && !collapsedSet.has(partner)) {
+                      hiddenNodeIds.add(partner);
+                      queue.push(partner);
+                    }
+                  });
+                });
+              }
+            }
+
+            const renderNodes = nodes.map(n => ({ ...n, hidden: hiddenNodeIds.has(n.id) }));
+            const renderEdges = edges.map(e => ({ ...e, hidden: hiddenNodeIds.has(e.source) || hiddenNodeIds.has(e.target) }));
+
+            return (
+              <ReactFlow
+                nodes={renderNodes}
+                edges={renderEdges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={(changes) => {
+                  onEdgesChange(changes);
+                  queueMicrotask(() => setEdges((es) => reconcile(nodes, es)));
+                }}
+                onConnect={onConnect}
+                nodeTypes={nodeTypes}
+                fitView
+                deleteKeyCode={["Delete"]}
+              >
+                <Background gap={20} size={1} />
+                <Controls />
+                <MiniMap pannable zoomable />
+              </ReactFlow>
+            );
+          })()}
         </div>
       </div>
     </ActionsContext.Provider>

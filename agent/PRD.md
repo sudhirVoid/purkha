@@ -20,7 +20,10 @@ Purkha is a web-based application designed to help users visually build and mana
    - Child
 3. **Person Metadata:**
    - Name and Gender (Male, Female, Other) with distinct visual styling.
-   - Media attachments (Image, Video, Audio) directly on the person's node.
+   - Extensive biographical details: Address, Birth Place, Date of Birth, Death Date, Currently Residing At, and Other Details (accessible via a slide-out side panel).
+   - Media attachments (Image, Video, Audio) viewable in a full-screen popup.
 4. **Relationship Metadata:**
    - Track marriage dates on "bond" nodes between spouses.
-5. **Interactive Actions:** Delete nodes, edit names, update genders, and remove media seamlessly from the toolbar.
+5. **Interactive Actions:** 
+   - Add/delete nodes, edit names/metadata, and update genders seamlessly.
+   - **Hierarchy Management:** Collapse (minimize) sub-trees to keep large family graphs visually manageable.

@@ -2,6 +2,9 @@
 
 ## Technical Stack
 - **Framework:** TanStack Start (SSR/routing framework)
+- **Backend Architecture:** Controller-Service Pattern (Framework Agnostic)
+- **Database:** NeonDB (Serverless PostgreSQL)
+- **ORM:** Drizzle ORM
 - **UI Library:** React 19
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS v4, Radix UI (shadcn/ui style components)
@@ -22,6 +25,10 @@
 Purkha/
 ├── agent/                 # AI Assistant memory and guidelines (you are here)
 ├── src/
+│   ├── backend/           # Core Backend Logic (Framework Agnostic)
+│   │   ├── controllers/   # HTTP Request/Response handling
+│   │   ├── services/      # Business logic and Drizzle ORM interactions
+│   │   └── db/            # Database schema and connection setup
 │   ├── components/        # React components
 │   │   ├── FamilyFlow.tsx # Core graph component handling tree logic
 │   │   └── ui/            # Reusable shadcn UI components
@@ -29,6 +36,7 @@ Purkha/
 │   ├── lib/               # Utility functions and configurations
 │   │   └── lovable-error-reporting.ts # Error logging
 │   ├── routes/            # TanStack file-based routing
+│   │   ├── api/           # API Endpoints (binds to controllers)
 │   │   ├── __root.tsx     # Global layout and providers
 │   │   └── index.tsx      # Main page rendering FamilyFlow
 │   ├── server.ts          # SSR server entry
@@ -36,5 +44,6 @@ Purkha/
 │   └── styles.css         # Global Tailwind CSS and variables
 ├── package.json           # Dependencies and scripts
 ├── vite.config.ts         # Vite and TanStack configuration
+├── drizzle.config.ts      # Drizzle ORM migration configuration
 └── components.json        # shadcn UI configuration
 ```

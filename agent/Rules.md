@@ -25,3 +25,13 @@ These rules must be strictly followed when assisting with the Purkha project.
 - Use the existing `reportLovableError` utility for capturing boundary errors.
 - Ensure graceful fallbacks for media (images/video/audio) that fail to load in the graph.
 - Provide clear visual feedback in the UI when graph actions cannot be completed (e.g., "Add parent first").
+
+## Backend & API Standards
+1. **Architecture:** Use the Controller-Service pattern for all backend features. Keep this logic tightly encapsulated inside `src/backend/`.
+2. **Framework Agnosticism:** Never write raw business logic or database queries directly inside `src/routes/api/` files. The TanStack router files should only pass the Request object to a Controller.
+3. **Database:** Use Drizzle ORM exclusively for database interactions (do not use Prisma or raw SQL).
+4. **Environment Variables & Secrets:**
+   - Server-only secrets MUST NOT be prefixed with `VITE_`.
+   - Any secret intended for the frontend MUST be prefixed with `VITE_`.
+   - Never push `.env` to Git. Always use `.env.example` to document required variables for other developers.
+   - When deploying (e.g., to Netlify), ensure secrets are added directly to the platform's environment variables.

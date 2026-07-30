@@ -9,12 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiTreeRouteImport } from './routes/api/tree'
 import { Route as ApiHelloRouteImport } from './routes/api/hello'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTreeRoute = ApiTreeRouteImport.update({
+  id: '/api/tree',
+  path: '/api/tree',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHelloRoute = ApiHelloRouteImport.update({
@@ -25,37 +43,70 @@ const ApiHelloRoute = ApiHelloRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
+  '/login': typeof LoginRoute
   '/api/hello': typeof ApiHelloRoute
+  '/api/tree': typeof ApiTreeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
+  '/login': typeof LoginRoute
   '/api/hello': typeof ApiHelloRoute
+  '/api/tree': typeof ApiTreeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
+  '/login': typeof LoginRoute
   '/api/hello': typeof ApiHelloRoute
+  '/api/tree': typeof ApiTreeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/hello'
+  fullPaths: '/' | '/builder' | '/login' | '/api/hello' | '/api/tree'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/hello'
-  id: '__root__' | '/' | '/api/hello'
+  to: '/' | '/builder' | '/login' | '/api/hello' | '/api/tree'
+  id: '__root__' | '/' | '/builder' | '/login' | '/api/hello' | '/api/tree'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuilderRoute: typeof BuilderRoute
+  LoginRoute: typeof LoginRoute
   ApiHelloRoute: typeof ApiHelloRoute
+  ApiTreeRoute: typeof ApiTreeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tree': {
+      id: '/api/tree'
+      path: '/api/tree'
+      fullPath: '/api/tree'
+      preLoaderRoute: typeof ApiTreeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/hello': {
@@ -70,7 +121,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuilderRoute: BuilderRoute,
+  LoginRoute: LoginRoute,
   ApiHelloRoute: ApiHelloRoute,
+  ApiTreeRoute: ApiTreeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

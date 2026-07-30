@@ -9,12 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiTreeRouteImport } from './routes/api/tree'
 import { Route as ApiHelloRouteImport } from './routes/api/hello'
+import { Route as ApiAuthVerifyRouteImport } from './routes/api/auth/verify'
+import { Route as ApiAuthResetPasswordRouteImport } from './routes/api/auth/reset-password'
+import { Route as ApiAuthRegisterRouteImport } from './routes/api/auth/register'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuthForgotPasswordRouteImport } from './routes/api/auth/forgot-password'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -40,47 +51,137 @@ const ApiHelloRoute = ApiHelloRouteImport.update({
   path: '/api/hello',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthVerifyRoute = ApiAuthVerifyRouteImport.update({
+  id: '/api/auth/verify',
+  path: '/api/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthResetPasswordRoute = ApiAuthResetPasswordRouteImport.update({
+  id: '/api/auth/reset-password',
+  path: '/api/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthRegisterRoute = ApiAuthRegisterRouteImport.update({
+  id: '/api/auth/register',
+  path: '/api/auth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthForgotPasswordRoute = ApiAuthForgotPasswordRouteImport.update({
+  id: '/api/auth/forgot-password',
+  path: '/api/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/builder': typeof BuilderRoute
   '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/api/hello': typeof ApiHelloRoute
   '/api/tree': typeof ApiTreeRoute
+  '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/register': typeof ApiAuthRegisterRoute
+  '/api/auth/reset-password': typeof ApiAuthResetPasswordRoute
+  '/api/auth/verify': typeof ApiAuthVerifyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/builder': typeof BuilderRoute
   '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/api/hello': typeof ApiHelloRoute
   '/api/tree': typeof ApiTreeRoute
+  '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/register': typeof ApiAuthRegisterRoute
+  '/api/auth/reset-password': typeof ApiAuthResetPasswordRoute
+  '/api/auth/verify': typeof ApiAuthVerifyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/builder': typeof BuilderRoute
   '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/api/hello': typeof ApiHelloRoute
   '/api/tree': typeof ApiTreeRoute
+  '/api/auth/forgot-password': typeof ApiAuthForgotPasswordRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/register': typeof ApiAuthRegisterRoute
+  '/api/auth/reset-password': typeof ApiAuthResetPasswordRoute
+  '/api/auth/verify': typeof ApiAuthVerifyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/builder' | '/login' | '/api/hello' | '/api/tree'
+  fullPaths:
+    | '/'
+    | '/builder'
+    | '/login'
+    | '/reset-password'
+    | '/api/hello'
+    | '/api/tree'
+    | '/api/auth/forgot-password'
+    | '/api/auth/login'
+    | '/api/auth/register'
+    | '/api/auth/reset-password'
+    | '/api/auth/verify'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/builder' | '/login' | '/api/hello' | '/api/tree'
-  id: '__root__' | '/' | '/builder' | '/login' | '/api/hello' | '/api/tree'
+  to:
+    | '/'
+    | '/builder'
+    | '/login'
+    | '/reset-password'
+    | '/api/hello'
+    | '/api/tree'
+    | '/api/auth/forgot-password'
+    | '/api/auth/login'
+    | '/api/auth/register'
+    | '/api/auth/reset-password'
+    | '/api/auth/verify'
+  id:
+    | '__root__'
+    | '/'
+    | '/builder'
+    | '/login'
+    | '/reset-password'
+    | '/api/hello'
+    | '/api/tree'
+    | '/api/auth/forgot-password'
+    | '/api/auth/login'
+    | '/api/auth/register'
+    | '/api/auth/reset-password'
+    | '/api/auth/verify'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuilderRoute: typeof BuilderRoute
   LoginRoute: typeof LoginRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiHelloRoute: typeof ApiHelloRoute
   ApiTreeRoute: typeof ApiTreeRoute
+  ApiAuthForgotPasswordRoute: typeof ApiAuthForgotPasswordRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthRegisterRoute: typeof ApiAuthRegisterRoute
+  ApiAuthResetPasswordRoute: typeof ApiAuthResetPasswordRoute
+  ApiAuthVerifyRoute: typeof ApiAuthVerifyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -116,6 +217,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHelloRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/verify': {
+      id: '/api/auth/verify'
+      path: '/api/auth/verify'
+      fullPath: '/api/auth/verify'
+      preLoaderRoute: typeof ApiAuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/reset-password': {
+      id: '/api/auth/reset-password'
+      path: '/api/auth/reset-password'
+      fullPath: '/api/auth/reset-password'
+      preLoaderRoute: typeof ApiAuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/register': {
+      id: '/api/auth/register'
+      path: '/api/auth/register'
+      fullPath: '/api/auth/register'
+      preLoaderRoute: typeof ApiAuthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/forgot-password': {
+      id: '/api/auth/forgot-password'
+      path: '/api/auth/forgot-password'
+      fullPath: '/api/auth/forgot-password'
+      preLoaderRoute: typeof ApiAuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -123,8 +259,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuilderRoute: BuilderRoute,
   LoginRoute: LoginRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiHelloRoute: ApiHelloRoute,
   ApiTreeRoute: ApiTreeRoute,
+  ApiAuthForgotPasswordRoute: ApiAuthForgotPasswordRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthRegisterRoute: ApiAuthRegisterRoute,
+  ApiAuthResetPasswordRoute: ApiAuthResetPasswordRoute,
+  ApiAuthVerifyRoute: ApiAuthVerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -559,6 +559,106 @@ const initialEdges: Edge[] = [
   mkEdge("love", "c3"),
 ];
 
+// ── Nepal Shah Dynasty (hardcoded demo) ────────────────────────────
+const nepalNodes: FamilyNode[] = [
+  // Generation 1: King Tribhuvan
+  personNode("tribhuvan", 0, 0, "King Tribhuvan", "male"),
+  personNode("kanti", 300, 0, "Kanti Rajya Lakshmi", "female"),
+  bondNode("bond-tk", 150, 100, "1919-02-27"),
+
+  // Generation 2: King Mahendra + siblings
+  personNode("mahendra", 0, 250, "King Mahendra", "male"),
+  personNode("indra", 300, 250, "Indra Rajya Lakshmi", "female"),
+  bondNode("bond-mi", 150, 350, "1940-05-01"),
+  personNode("himalaya", 600, 250, "Prince Himalaya", "male"),
+
+  // Generation 3: King Birendra, Prince Gyanendra, and siblings
+  personNode("birendra", 0, 500, "King Birendra", "male"),
+  personNode("aishwarya", 300, 500, "Queen Aishwarya", "female"),
+  bondNode("bond-ba", 150, 600, "1970-02-27"),
+
+  personNode("gyanendra", 600, 500, "King Gyanendra", "male"),
+  personNode("komal", 900, 500, "Queen Komal", "female"),
+  bondNode("bond-gk", 750, 600, "1970-05-01"),
+
+  personNode("dhirendra", 1100, 500, "Prince Dhirendra", "male"),
+
+  // Generation 4: Birendra's children
+  personNode("dipendra", 0, 750, "Crown Prince Dipendra", "male"),
+  personNode("shruti", 300, 750, "Princess Shruti", "female"),
+  personNode("nirajan", 500, 750, "Prince Nirajan", "male"),
+
+  // Kumar Khadga (Shruti's husband)
+  personNode("kumar", 300, 750, "Kumar Khadga", "male"),
+  bondNode("bond-sk", 300, 850, "2000-01-25"),
+
+  // Generation 4: Gyanendra's children
+  personNode("paras", 700, 750, "Prince Paras", "male"),
+  personNode("himani", 900, 750, "Himani Rajya Lakshmi", "female"),
+  bondNode("bond-ph", 800, 850, "2000-01-01"),
+  personNode("prerana", 1100, 750, "Princess Prerana", "female"),
+
+  // Generation 5: Paras's children
+  personNode("hridayendra", 650, 1000, "Prince Hridayendra", "male"),
+  personNode("purnika", 850, 1000, "Princess Purnika", "female"),
+  personNode("kritika", 1050, 1000, "Princess Kritika", "female"),
+
+  // Generation 5: Shruti's children  
+  personNode("girvani", 200, 1000, "Girvani Rajya Lakshmi", "female"),
+  personNode("surangana", 400, 1000, "Surangana Rajya Lakshmi", "female"),
+];
+
+const nepalEdges: Edge[] = [
+  // Gen 1 → Bond
+  mkEdge("tribhuvan", "bond-tk"),
+  mkEdge("kanti", "bond-tk"),
+
+  // Bond → Gen 2
+  mkEdge("bond-tk", "mahendra"),
+  mkEdge("bond-tk", "himalaya"),
+
+  // Gen 2 → Bond
+  mkEdge("mahendra", "bond-mi"),
+  mkEdge("indra", "bond-mi"),
+
+  // Bond → Gen 3
+  mkEdge("bond-mi", "birendra"),
+  mkEdge("bond-mi", "gyanendra"),
+  mkEdge("bond-mi", "dhirendra"),
+
+  // Gen 3 → Bonds
+  mkEdge("birendra", "bond-ba"),
+  mkEdge("aishwarya", "bond-ba"),
+  mkEdge("gyanendra", "bond-gk"),
+  mkEdge("komal", "bond-gk"),
+
+  // Bond → Gen 4 (Birendra's children)
+  mkEdge("bond-ba", "dipendra"),
+  mkEdge("bond-ba", "shruti"),
+  mkEdge("bond-ba", "nirajan"),
+
+  // Shruti + Kumar bond
+  mkEdge("shruti", "bond-sk"),
+  mkEdge("kumar", "bond-sk"),
+
+  // Bond → Gen 4 (Gyanendra's children)
+  mkEdge("bond-gk", "paras"),
+  mkEdge("bond-gk", "prerana"),
+
+  // Paras + Himani bond
+  mkEdge("paras", "bond-ph"),
+  mkEdge("himani", "bond-ph"),
+
+  // Bond → Gen 5 (Paras's children)
+  mkEdge("bond-ph", "hridayendra"),
+  mkEdge("bond-ph", "purnika"),
+  mkEdge("bond-ph", "kritika"),
+
+  // Bond → Gen 5 (Shruti's children)
+  mkEdge("bond-sk", "girvani"),
+  mkEdge("bond-sk", "surangana"),
+];
+
 function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   const kindOf = new Map(nodes.map((node) => [node.id, node.data.kind]));
   const partnersOf = new Map<string, string[]>();
@@ -619,10 +719,11 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     });
   }
 
-  const LEVEL_H = 240;
-  const NODE_GAP = 60;
-  const NODE_W = 170;
-  const BOND_DY = 100;
+  const LEVEL_H = 260;
+  const NODE_GAP = 50;
+  const NODE_W = 230;
+  const BOND_W = 100;
+  const BOND_DY = 110;
 
   const byLevel = new Map<number, string[]>();
   persons.forEach((personId) => {
@@ -661,9 +762,10 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
       });
     });
 
-    const totalW = (ordered.length - 1) * (NODE_W + NODE_GAP);
+    const step = NODE_W + NODE_GAP;
+    const totalW = (ordered.length - 1) * step;
     ordered.forEach((id, i) => {
-      positions.set(id, { x: i * (NODE_W + NODE_GAP) - totalW / 2, y: lvl * LEVEL_H });
+      positions.set(id, { x: i * step - totalW / 2, y: lvl * LEVEL_H });
     });
   });
 
@@ -721,6 +823,65 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   });
 
   // Re-adjust bonds after children and their spouses have been moved
+  bonds.forEach((bondId) => {
+    const parts = partnersOf.get(bondId) || [];
+    const pts = parts.map((partnerId) => positions.get(partnerId)).filter(Boolean) as { x: number; y: number }[];
+    if (pts.length) {
+      const avgX = pts.reduce((sum, pt) => sum + pt.x, 0) / pts.length;
+      const maxY = Math.max(...pts.map((pt) => pt.y));
+      positions.set(bondId, { x: avgX, y: maxY + BOND_DY });
+    }
+  });
+
+  // ── Global overlap resolution ──────────────────────────────────────
+  // Group ALL positioned nodes (persons + bonds) by their Y-band and
+  // push apart any that overlap horizontally.
+  const allPositioned = [...positions.entries()].map(([id, pos]) => ({ id, ...pos }));
+
+  // Group by approximate Y (within 80px = same visual row)
+  const yBands = new Map<number, { id: string; x: number; y: number }[]>();
+  allPositioned.forEach((item) => {
+    const bandKey = Math.round(item.y / 80) * 80;
+    yBands.set(bandKey, [...(yBands.get(bandKey) || []), item]);
+  });
+
+  yBands.forEach((band) => {
+    if (band.length < 2) return;
+    // Sort by x within the band
+    band.sort((a, b) => a.x - b.x);
+
+    // Push apart overlapping pairs
+    for (let i = 1; i < band.length; i++) {
+      const prev = band[i - 1];
+      const curr = band[i];
+      const prevW = kindOf.get(prev.id) === "bond" ? BOND_W : NODE_W;
+      const minGap = (prevW + NODE_W) / 2 + NODE_GAP;
+      const actualGap = curr.x - prev.x;
+      if (actualGap < minGap) {
+        const shift = minGap - actualGap;
+        // Push current and all subsequent nodes to the right
+        for (let j = i; j < band.length; j++) {
+          band[j].x += shift;
+          positions.set(band[j].id, { x: band[j].x, y: band[j].y });
+        }
+      }
+    }
+
+    // Re-center the band so the group stays balanced
+    const minX = band[0].x;
+    const maxX = band[band.length - 1].x;
+    const centerOffset = (minX + maxX) / 2;
+    // Only re-center if this band was shifted significantly
+    if (Math.abs(centerOffset) > NODE_W) {
+      const shift = centerOffset / 2;
+      band.forEach((item) => {
+        item.x -= shift;
+        positions.set(item.id, { x: item.x, y: item.y });
+      });
+    }
+  });
+
+  // Final bond re-center after overlap resolution moved person nodes
   bonds.forEach((bondId) => {
     const parts = partnersOf.get(bondId) || [];
     const pts = parts.map((partnerId) => positions.get(partnerId)).filter(Boolean) as { x: number; y: number }[];
@@ -951,6 +1112,15 @@ function FamilyFlowInner() {
     setEdges([]);
   };
 
+  const loadNepalKings = () => {
+    setNodes(nepalNodes);
+    setEdges(nepalEdges);
+    setTimeout(() => {
+      setNodes((cur) => autoLayout(cur, nepalEdges));
+      setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 50);
+    }, 50);
+  };
+
   const runAutoLayout = () => {
     setNodes((currentNodes) => autoLayout(currentNodes, edges));
     // Re-center the viewport after nodes are repositioned so the diagram
@@ -1023,6 +1193,7 @@ function FamilyFlowInner() {
           {/* Keep our utility buttons in a floating container */}
           <div className="floating-ui bg-surface-bright/90 rounded-full flex p-1 border border-outline-variant ml-4">
             <button onClick={runAutoLayout} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Auto Layout</button>
+            <button onClick={loadNepalKings} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">King Of Nepal</button>
             <button onClick={exportImage} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Export Image</button>
             <button onClick={exportBackup} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Save</button>
             <button onClick={() => fileInputRef.current?.click()} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Load</button>

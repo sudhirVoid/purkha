@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import FamilyFlow from "@/components/FamilyFlow";
+import FamilyFlow from "@/components/family-tree";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 export const Route = createFileRoute("/builder")({

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
   ReactFlow,
   Controls,
@@ -22,16 +22,32 @@ import { mediaKindOf } from "./utils";
 import { PersonNodeView } from "./nodes/PersonNode";
 import { BondNodeView } from "./nodes/BondNode";
 import { FamilyEdge } from "./edges/FamilyEdge";
+import { auth } from "@/lib/firebase";
+import { toast } from "sonner";
 
 const nodeTypes = { family: PersonNodeView, bond: BondNodeView };
 const edgeTypes = { familyEdge: FamilyEdge };
 
-export default function FamilyFlowInner() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<FamilyNode>(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
+export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges: propEdges, treeId, treeName }: any) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<FamilyNode>(propNodes || initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(propEdges || initialEdges);
   const wrapper = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { fitView } = useReactFlow();
+
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [flowName, setFlowName] = useState(treeName || "");
+  const [isSavingFlow, setIsSavingFlow] = useState(false);
+  const [currentTreeId, setCurrentTreeId] = useState<string | null>(treeId || null);
+
+  useEffect(() => {
+    if (propNodes && propEdges) {
+      setNodes(propNodes);
+      setEdges(propEdges);
+      setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 50);
+    }
+  }, [propNodes, propEdges, setNodes, setEdges, fitView]);
+
 
   const commit = useCallback(
     (mutator: (currentNodes: FamilyNode[], currentEdges: Edge[]) => { nodes: FamilyNode[]; edges: Edge[] }) => {
@@ -269,6 +285,46 @@ export default function FamilyFlowInner() {
     [setNodes, setEdges],
   );
 
+  const saveFlowToCloud = async () => {
+    if (!auth.currentUser) {
+      toast.error("You must be logged in to save.");
+      return;
+    }
+    if (!flowName.trim()) {
+      toast.error("Please enter a name for the flow.");
+      return;
+    }
+
+    setIsSavingFlow(true);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const payload = {
+        id: currentTreeId,
+        name: flowName.trim(),
+        data: { nodes, edges }
+      };
+
+      const res = await fetch("/api/trees", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Failed to save flow");
+      const data = await res.json();
+      setCurrentTreeId(data.id);
+      setIsSaveModalOpen(false);
+      toast.success("Flow saved successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save flow");
+    } finally {
+      setIsSavingFlow(false);
+    }
+  };
+
   return (
     <ActionsContext.Provider value={actions}>
       <div className="w-full h-full flex flex-col bg-transparent relative">
@@ -286,7 +342,8 @@ export default function FamilyFlowInner() {
             <button onClick={runAutoLayout} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Auto Layout</button>
             <button onClick={loadNepalKings} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">King Of Nepal</button>
             <button onClick={exportImage} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Export Image</button>
-            <button onClick={exportBackup} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Save</button>
+            <button onClick={() => setIsSaveModalOpen(true)} className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-label-sm uppercase font-bold">Save Flow</button>
+            <button onClick={exportBackup} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Local Backup</button>
             <button onClick={() => fileInputRef.current?.click()} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Load</button>
             <button onClick={clearAll} className="px-3 py-1 text-xs rounded-full hover:bg-error-container text-error transition-colors font-label-sm uppercase">Clear</button>
             <input type="file" accept="application/json" className="hidden" ref={fileInputRef} onChange={importBackup} />
@@ -394,6 +451,38 @@ export default function FamilyFlowInner() {
             );
           })()}
         </div>
+
+        {isSaveModalOpen && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-scrim/50 backdrop-blur-sm">
+            <div className="bg-surface rounded-2xl p-6 shadow-xl w-full max-w-sm border border-outline-variant">
+              <h2 className="font-title-lg text-on-surface mb-4">Save Family Flow</h2>
+              <input
+                type="text"
+                placeholder="Name your family tree (e.g., Royal Lineage)"
+                value={flowName}
+                onChange={(e) => setFlowName(e.target.value)}
+                className="w-full bg-surface-container-highest border border-outline py-2 px-4 rounded-lg focus:outline-none focus:border-primary mb-6"
+                autoFocus
+              />
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setIsSaveModalOpen(false)}
+                  disabled={isSavingFlow}
+                  className="px-4 py-2 rounded-full font-label-sm hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveFlowToCloud}
+                  disabled={isSavingFlow}
+                  className="px-6 py-2 rounded-full font-label-sm bg-primary text-on-primary hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  {isSavingFlow ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ActionsContext.Provider>
   );

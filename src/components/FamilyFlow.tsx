@@ -13,8 +13,10 @@ import {
   Handle,
   Position,
   NodeToolbar,
+  BaseEdge,
   type Node,
   type Edge,
+  type EdgeProps,
   type Connection,
   type NodeProps,
 } from "@xyflow/react";
@@ -306,8 +308,6 @@ function Handles() {
     <>
       <Handle type="target" position={Position.Top} className={handleCls} />
       <Handle type="source" position={Position.Bottom} className={handleCls} />
-      <Handle type="target" position={Position.Left} id="l" className={handleCls} />
-      <Handle type="source" position={Position.Right} id="r" className={handleCls} />
     </>
   );
 }
@@ -402,11 +402,14 @@ function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
     if (fileRef.current) fileRef.current.value = "";
   };
 
+  const dobYear = data.dob ? new Date(data.dob).getFullYear() : "?";
+  const deathYear = data.deathDate ? new Date(data.deathDate).getFullYear() : "Present";
+
   return (
     <div
-      className={`rounded-2xl border-2 px-5 py-3 shadow-sm font-medium text-sm text-center transition ${
+      className={`rounded-2xl border-2 px-4 py-3 shadow-sm font-medium text-sm transition ${
         genderStyles[gender]
-      } min-w-[130px] ${selected ? "ring-2 ring-ring ring-offset-2 ring-offset-background" : ""}`}
+      } min-w-[200px] ${selected ? "ring-2 ring-ring ring-offset-2 ring-offset-background" : ""}`}
       style={{ fontFamily: "'Kalam', 'Comic Sans MS', cursive" }}
     >
       <NodeToolbar isVisible={selected} position={Position.Right}>
@@ -414,23 +417,30 @@ function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
       </NodeToolbar>
       <Handles />
       
-      <div className="flex items-center justify-center gap-2 relative">
+      <div className="flex items-center gap-3 relative text-left">
         <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handleProfileImageChange} />
         <div 
-          className="w-8 h-8 rounded-full border bg-white flex items-center justify-center relative overflow-hidden shrink-0 group cursor-pointer"
+          className="w-14 h-14 rounded-xl border-2 border-current/20 bg-white/50 flex items-center justify-center relative overflow-hidden shrink-0 group cursor-pointer"
           onClick={() => fileRef.current?.click()}
           title="Click to upload picture"
         >
           {data.profileImage ? (
             <img src={data.profileImage} alt={data.label} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-sm opacity-50">{genderIcon[gender]}</span>
+            <span className="text-xl opacity-50">{genderIcon[gender]}</span>
           )}
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Camera className="w-3.5 h-3.5 text-white" />
+            <Camera className="w-5 h-5 text-white" />
           </div>
         </div>
-        <span>{data.label}</span>
+        
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="font-bold text-base truncate leading-tight">{data.label}</span>
+          <span className="text-xs opacity-80 mt-0.5">{dobYear} — {deathYear}</span>
+          {data.birthPlace && (
+            <span className="text-[10px] opacity-70 truncate mt-0.5">{data.birthPlace}</span>
+          )}
+        </div>
       </div>
       <MediaStrip nodeId={id} media={data.media ?? []} />
       <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
@@ -438,10 +448,73 @@ function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   );
 }
 
+/**
+ * Custom edge component for clean family-tree connectors.
+ * Draws orthogonal paths with at most one horizontal-vertical bend
+ * and smooth rounded corners — no zigzag routing.
+ */
+function FamilyEdge({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  id,
+  style,
+  markerEnd,
+  markerStart,
+}: EdgeProps) {
+  const R = 12; // corner radius for rounded bends
+  const dx = targetX - sourceX;
+  const dy = targetY - sourceY;
+
+  let path: string;
+
+  if (Math.abs(dx) < 1) {
+    // Perfectly (or nearly) aligned vertically — straight line
+    path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+  } else if (dy > 0) {
+    // Normal top-to-bottom flow: drop halfway, go horizontal, drop to target
+    const midY = sourceY + dy / 2;
+    const absDx = Math.abs(dx);
+    const absDyHalf = dy / 2;
+    const r = Math.min(R, absDx / 2, absDyHalf / 2); // clamp radius to available space
+    const sx = dx > 0 ? 1 : -1; // sign for horizontal direction
+
+    path = [
+      `M ${sourceX} ${sourceY}`,
+      // Vertical drop from source to first bend
+      `L ${sourceX} ${midY - r}`,
+      // Rounded corner: turn horizontal
+      `Q ${sourceX} ${midY} ${sourceX + sx * r} ${midY}`,
+      // Horizontal segment
+      `L ${targetX - sx * r} ${midY}`,
+      // Rounded corner: turn vertical
+      `Q ${targetX} ${midY} ${targetX} ${midY + r}`,
+      // Vertical drop to target
+      `L ${targetX} ${targetY}`,
+    ].join(" ");
+  } else {
+    // Edge case: target is above or same level — use a simple bezier
+    const midY = sourceY + dy / 2;
+    path = `M ${sourceX} ${sourceY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}`;
+  }
+
+  return (
+    <BaseEdge
+      id={id}
+      path={path}
+      style={style}
+      markerEnd={markerEnd}
+      markerStart={markerStart}
+    />
+  );
+}
+
 const nodeTypes = { family: PersonNodeView, bond: BondNodeView };
+const edgeTypes = { familyEdge: FamilyEdge };
 
 const edgeBase: Partial<Edge> = {
-  type: "smoothstep",
+  type: "familyEdge",
   style: { stroke: "hsl(0 0% 10%)", strokeWidth: 2 },
   markerEnd: { type: MarkerType.ArrowClosed, color: "hsl(0 0% 10%)" },
 };
@@ -600,7 +673,7 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     if (pts.length) {
       const avgX = pts.reduce((sum, pt) => sum + pt.x, 0) / pts.length;
       const maxY = Math.max(...pts.map((pt) => pt.y));
-      positions.set(bondId, { x: avgX + 30, y: maxY + BOND_DY });
+      positions.set(bondId, { x: avgX, y: maxY + BOND_DY });
     }
   });
 
@@ -654,7 +727,7 @@ function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     if (pts.length) {
       const avgX = pts.reduce((sum, pt) => sum + pt.x, 0) / pts.length;
       const maxY = Math.max(...pts.map((pt) => pt.y));
-      positions.set(bondId, { x: avgX + 30, y: maxY + BOND_DY });
+      positions.set(bondId, { x: avgX, y: maxY + BOND_DY });
     }
   });
 
@@ -878,7 +951,12 @@ function FamilyFlowInner() {
     setEdges([]);
   };
 
-  const runAutoLayout = () => setNodes((currentNodes) => autoLayout(currentNodes, edges));
+  const runAutoLayout = () => {
+    setNodes((currentNodes) => autoLayout(currentNodes, edges));
+    // Re-center the viewport after nodes are repositioned so the diagram
+    // fits within the visible canvas area (not behind the sidebar)
+    setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 50);
+  };
 
   const addStandalonePerson = () =>
     setNodes((currentNodes) => [...currentNodes, personNode(nextId(), 100 + Math.random() * 300, 60, "Person")]);
@@ -935,10 +1013,12 @@ function FamilyFlowInner() {
       <div className="w-full h-full flex flex-col bg-transparent relative">
         {/* Central Add Action (From HTML) mapping to our actions */}
         <div className="absolute top-8 right-8 z-30 flex space-x-2">
-          <button onClick={addStandalonePerson} className="terracotta-btn px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg">
-            <span className="material-symbols-outlined">account_tree</span>
-            <span className="font-label-sm uppercase tracking-wider">Add Root Ancestor</span>
-          </button>
+          {nodes.length === 0 && (
+            <button onClick={addStandalonePerson} className="terracotta-btn px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg">
+              <span className="material-symbols-outlined">account_tree</span>
+              <span className="font-label-sm uppercase tracking-wider">Add Root Ancestor</span>
+            </button>
+          )}
           
           {/* Keep our utility buttons in a floating container */}
           <div className="floating-ui bg-surface-bright/90 rounded-full flex p-1 border border-outline-variant ml-4">
@@ -1041,8 +1121,10 @@ function FamilyFlowInner() {
                 }}
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 fitView
                 deleteKeyCode={["Delete"]}
+                proOptions={{ hideAttribution: true }}
                 className="z-10"
               >
                 <Controls position="bottom-right" className="floating-ui border border-outline-variant bg-surface-bright/90" showInteractive={false} />

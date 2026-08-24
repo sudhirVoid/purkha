@@ -24,7 +24,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </nav>
         <div className="flex items-center space-x-6">
           <div className="relative hidden lg:block">
-            <input className="bg-surface-container-low border-b border-outline py-1 px-4 text-sm focus:outline-none focus:border-tertiary w-64" placeholder="Search ancestors..." type="text"/>
+            <input className="bg-surface-container-low border-b border-outline py-1 px-4 text-sm focus:outline-none focus:border-tertiary w-64" placeholder="Search ancestors..." type="text" />
             <span className="material-symbols-outlined absolute right-2 top-1 text-outline">search</span>
           </div>
           <button className="font-label-sm text-label-sm uppercase tracking-widest text-on-primary bg-primary px-6 py-2 transition-all duration-300 hover:opacity-80">
@@ -35,12 +35,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* SideNavBar */}
-        <aside className={`bg-surface-container-low dark:bg-inverse-surface h-screen fixed left-0 top-0 border-r border-outline-variant dark:border-outline flat no shadows z-40 hidden md:flex flex-col py-terrace-padding space-y-4 pt-24 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <aside className={`bg-surface-container-low dark:bg-inverse-surface border-r border-outline-variant dark:border-outline flat no shadows z-40 hidden md:flex flex-col py-terrace-padding space-y-4 pt-8 transition-all duration-300 relative shrink-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
           <div className={`px-4 mb-8 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!isSidebarCollapsed && (
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant shrink-0">
-                  <img className="w-full h-full object-cover" alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEOho9_qLkGjMoUnehxDs_7YReXVgC00GZqXhWIitrSbZHi6ObyKBPQ-jSh6SjZdd_tYfIWw8v1-tVYTPbPEd0aqBcaI33higf_Py77kYcDdQiz1krOzAX8NidPPHaYY27tgTSM0D_q1fT5EEm2wF76HAR3E_4hBdljTcsOTS_esXJ_O-fHvg12plUCvAYKJ1DR0rf-ATAlXX5urbFfyxP98au_HZPNdEZeiI3pHV-KfmAq8vJucc23w"/>
+                  <img className="w-full h-full object-cover" alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEOho9_qLkGjMoUnehxDs_7YReXVgC00GZqXhWIitrSbZHi6ObyKBPQ-jSh6SjZdd_tYfIWw8v1-tVYTPbPEd0aqBcaI33higf_Py77kYcDdQiz1krOzAX8NidPPHaYY27tgTSM0D_q1fT5EEm2wF76HAR3E_4hBdljTcsOTS_esXJ_O-fHvg12plUCvAYKJ1DR0rf-ATAlXX5urbFfyxP98au_HZPNdEZeiI3pHV-KfmAq8vJucc23w" />
                 </div>
                 <div className="overflow-hidden">
                   <h2 className="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim text-lg truncate">Purkha Register</h2>
@@ -50,17 +50,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
             )}
             {isSidebarCollapsed && (
               <div className="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant shrink-0 mb-2">
-                <img className="w-full h-full object-cover" alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEOho9_qLkGjMoUnehxDs_7YReXVgC00GZqXhWIitrSbZHi6ObyKBPQ-jSh6SjZdd_tYfIWw8v1-tVYTPbPEd0aqBcaI33higf_Py77kYcDdQiz1krOzAX8NidPPHaYY27tgTSM0D_q1fT5EEm2wF76HAR3E_4hBdljTcsOTS_esXJ_O-fHvg12plUCvAYKJ1DR0rf-ATAlXX5urbFfyxP98au_HZPNdEZeiI3pHV-KfmAq8vJucc23w"/>
+                <img className="w-full h-full object-cover" alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEOho9_qLkGjMoUnehxDs_7YReXVgC00GZqXhWIitrSbZHi6ObyKBPQ-jSh6SjZdd_tYfIWw8v1-tVYTPbPEd0aqBcaI33higf_Py77kYcDdQiz1krOzAX8NidPPHaYY27tgTSM0D_q1fT5EEm2wF76HAR3E_4hBdljTcsOTS_esXJ_O-fHvg12plUCvAYKJ1DR0rf-ATAlXX5urbFfyxP98au_HZPNdEZeiI3pHV-KfmAq8vJucc23w" />
               </div>
             )}
-            <button 
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-              className="w-5 h-12 flex items-center justify-center hover:bg-surface-container-highest transition-colors text-outline absolute top-32 -right-[21px] bg-surface-container-low border border-outline-variant border-l-0 rounded-r-2xl z-50"
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="w-5 h-12 flex items-center justify-center hover:bg-surface-container-highest transition-colors text-outline absolute top-8 -right-[21px] bg-surface-container-low border border-outline-variant border-l-0 rounded-r-2xl z-50"
             >
               <span className="material-symbols-outlined text-sm -ml-1">{isSidebarCollapsed ? 'chevron_right' : 'chevron_left'}</span>
             </button>
           </div>
-          
+
           <nav className="flex-1 space-y-2 flex flex-col items-center w-full">
             <Link to="/builder" className={`flex items-center space-x-3 bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed-dim rounded-full py-2 transition-all duration-300 w-full hover:opacity-90 ${isSidebarCollapsed ? 'justify-center mx-0 w-12' : 'px-4 mx-2 max-w-[calc(100%-16px)]'}`}>
               <span className="material-symbols-outlined">account_tree</span>
@@ -82,7 +82,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </aside>
 
         {/* Main Canvas Area */}
-        <main className={`flex-1 relative bg-surface-container-low overflow-hidden canvas-container transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`} id="canvas">
+        <main className="flex-1 min-w-0 relative bg-surface-container-low overflow-hidden canvas-container transition-all duration-300" id="canvas">
           {children}
         </main>
       </div>

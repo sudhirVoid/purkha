@@ -42,4 +42,7 @@ export type Actions = {
   canCollapse: (id: string) => boolean;
   getParentInfo: (id: string) => { hasBondParent: boolean; directParents: string[] };
   getNode: (id: string) => FamilyNode | undefined;
+  setActiveSpouse: (personId: string, bondId: string) => void;
+  getSpouses: (personId: string) => { bondId: string; spouseNode: FamilyNode }[];
+  getActiveSpouse: (personId: string) => string | undefined;
 };

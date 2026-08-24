@@ -1,4 +1,5 @@
 import { BaseEdge, type EdgeProps } from "@xyflow/react";
+import { getLoveColor } from "../utils";
 
 /**
  * Custom edge component for clean family-tree connectors.
@@ -14,6 +15,8 @@ export function FamilyEdge({
   style,
   markerEnd,
   markerStart,
+  source,
+  target,
 }: EdgeProps) {
   const R = 12; // corner radius for rounded bends
   const dx = targetX - sourceX;
@@ -51,11 +54,15 @@ export function FamilyEdge({
     path = `M ${sourceX} ${sourceY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}`;
   }
 
+  const bondId = source.startsWith("bond-") ? source : target.startsWith("bond-") ? target : null;
+  const color = bondId ? getLoveColor(bondId) : null;
+  const computedStyle = { ...style, stroke: color ? color.connector : (style?.stroke || "currentColor") };
+
   return (
     <BaseEdge
       id={id}
       path={path}
-      style={style}
+      style={computedStyle}
       markerEnd={markerEnd}
       markerStart={markerStart}
     />

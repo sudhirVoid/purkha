@@ -1,7 +1,7 @@
 import { NodeToolbar, Position, type NodeProps } from "@xyflow/react";
 import type { FamilyNode, FamilyNodeData } from "../types";
 import { useActions } from "../ActionsContext";
-import { formatDate } from "../utils";
+import { formatDate, getLoveColor } from "../utils";
 import { Handles } from "./Handles";
 import { ToolbarBtn } from "./ToolbarBtn";
 
@@ -29,6 +29,9 @@ function BondToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
 
 export function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   const pretty = formatDate(data.marriageDate);
+  const color = getLoveColor(id);
+  const gradId = `loveGrad-${id}`;
+
   return (
     <div className="flex flex-col items-center">
       <NodeToolbar isVisible={selected} position={Position.Right}>
@@ -41,15 +44,15 @@ export function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
       >
         <svg viewBox="0 0 100 92" className="absolute inset-0 h-full w-full drop-shadow-md">
           <defs>
-            <linearGradient id="loveGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="hsl(345 90% 62%)" />
-              <stop offset="100%" stopColor="hsl(325 75% 45%)" />
+            <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={color.grad1} />
+              <stop offset="100%" stopColor={color.grad2} />
             </linearGradient>
           </defs>
           <path
             d="M50 88 C10 60 4 36 18 22 C30 10 46 14 50 28 C54 14 70 10 82 22 C96 36 90 60 50 88 Z"
-            fill="url(#loveGrad)"
-            stroke={selected ? "hsl(var(--ring))" : "hsl(345 60% 35%)"}
+            fill={`url(#${gradId})`}
+            stroke={selected ? "hsl(var(--ring))" : color.stroke}
             strokeWidth={selected ? 3 : 2}
           />
         </svg>

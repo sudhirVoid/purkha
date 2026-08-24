@@ -1,0 +1,189 @@
+import { useRef } from "react";
+import { NodeToolbar, Position, type NodeProps } from "@xyflow/react";
+import { Camera } from "lucide-react";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../../ui/sheet";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
+import { Textarea } from "../../ui/textarea";
+import type { FamilyNode, FamilyNodeData, Gender } from "../types";
+import { genderIcon, genderStyles } from "../constants";
+import { useActions } from "../ActionsContext";
+import { Handles } from "./Handles";
+import { ToolbarBtn } from "./ToolbarBtn";
+import { MediaStrip } from "./MediaStrip";
+import { CollapseBtn } from "./CollapseBtn";
+
+function PersonToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
+  const actions = useActions();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const parentInfo = actions.getParentInfo(id);
+  const canAddFather = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => actions.getNode(pid)?.data.gender === "male");
+  const canAddMother = !parentInfo.hasBondParent && !parentInfo.directParents.some(pid => actions.getNode(pid)?.data.gender === "female");
+
+  return (
+    <div className="rounded-xl border bg-card shadow-lg p-2 space-y-2 w-[240px]">
+      <input
+        value={data.label}
+        onChange={(event) => actions.rename(id, event.target.value)}
+        className="w-full px-2 py-1 text-xs rounded-md border bg-background"
+        placeholder="Name"
+      />
+      <div className="flex gap-1">
+        {(["male", "female", "other"] as Gender[]).map((genderOption) => (
+          <button
+            key={genderOption}
+            onClick={() => actions.setGender(id, genderOption)}
+            className={`flex-1 px-2 py-1 text-xs rounded-md border capitalize transition ${
+              (data.gender ?? "other") === genderOption ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"
+            }`}
+          >
+            {genderIcon[genderOption]} {genderOption}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-1">
+        <ToolbarBtn onClick={() => actions.addParent(id, "Father")} disabled={!canAddFather} title={!canAddFather ? "Father already exists" : ""}>+ Father</ToolbarBtn>
+        <ToolbarBtn onClick={() => actions.addParent(id, "Mother")} disabled={!canAddMother} title={!canAddMother ? "Mother already exists" : ""}>+ Mother</ToolbarBtn>
+        <ToolbarBtn
+          onClick={() => actions.addSpouse(id)}
+          disabled={actions.hasPartner(id)}
+          title={actions.hasPartner(id) ? "Already has a partner" : ""}
+        >
+          + Spouse
+        </ToolbarBtn>
+        <ToolbarBtn
+          onClick={() => actions.addSibling(id)}
+          disabled={!actions.hasParent(id)}
+          title={!actions.hasParent(id) ? "Add a parent first" : ""}
+        >
+          + Sibling
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => actions.addChild(id)}>+ Child</ToolbarBtn>
+        <ToolbarBtn onClick={() => fileRef.current?.click()}>+ Media</ToolbarBtn>
+        <Sheet>
+          <SheetTrigger asChild>
+            <div className="col-span-2">
+              <ToolbarBtn onClick={() => {}} title="Edit details">Edit Details</ToolbarBtn>
+            </div>
+          </SheetTrigger>
+          <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Edit Details</SheetTitle>
+              <SheetDescription>Update personal information for {data.label || "this member"}.</SheetDescription>
+            </SheetHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor={`name-${id}`}>Name (Required)</Label>
+                <Input id={`name-${id}`} value={data.label} onChange={(event) => actions.updateNodeData(id, { label: event.target.value })} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`dob-${id}`}>Date of Birth</Label>
+                <Input id={`dob-${id}`} type="date" value={data.dob || ""} onChange={(event) => actions.updateNodeData(id, { dob: event.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`birthPlace-${id}`}>Birth Place</Label>
+                <Input id={`birthPlace-${id}`} value={data.birthPlace || ""} onChange={(event) => actions.updateNodeData(id, { birthPlace: event.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`deathDate-${id}`}>Death Date (if deceased)</Label>
+                <Input id={`deathDate-${id}`} type="date" value={data.deathDate || ""} onChange={(event) => actions.updateNodeData(id, { deathDate: event.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`address-${id}`}>Address</Label>
+                <Textarea id={`address-${id}`} value={data.address || ""} onChange={(event) => actions.updateNodeData(id, { address: event.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`residingAt-${id}`}>Currently Residing At</Label>
+                <Input id={`residingAt-${id}`} value={data.residingAt || ""} onChange={(event) => actions.updateNodeData(id, { residingAt: event.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`otherDetails-${id}`}>Other Details</Label>
+                <Textarea id={`otherDetails-${id}`} value={data.otherDetails || ""} onChange={(event) => actions.updateNodeData(id, { otherDetails: event.target.value })} />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*,video/*,audio/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          actions.addMedia(id, event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <button
+        onClick={() => actions.remove(id)}
+        className="w-full px-2 py-1 text-xs rounded-md border border-destructive text-destructive hover:bg-destructive/10"
+      >
+        Delete
+      </button>
+    </div>
+  );
+}
+
+export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
+  const gender = data.gender ?? "other";
+  const actions = useActions();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (fileEvent) => {
+      actions.setProfileImage(id, fileEvent.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const dobYear = data.dob ? new Date(data.dob).getFullYear() : "?";
+  const deathYear = data.deathDate ? new Date(data.deathDate).getFullYear() : "Present";
+
+  return (
+    <div
+      className={`rounded-2xl border-2 px-4 py-3 shadow-sm font-medium text-sm transition ${
+        genderStyles[gender]
+      } min-w-[200px] ${selected ? "ring-2 ring-ring ring-offset-2 ring-offset-background" : ""}`}
+      style={{ fontFamily: "'Kalam', 'Comic Sans MS', cursive" }}
+    >
+      <NodeToolbar isVisible={selected} position={Position.Right}>
+        <PersonToolbar id={id} data={data} />
+      </NodeToolbar>
+      <Handles />
+
+      <div className="flex items-center gap-3 relative text-left">
+        <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handleProfileImageChange} />
+        <div
+          className="w-14 h-14 rounded-xl border-2 border-current/20 bg-white/50 flex items-center justify-center relative overflow-hidden shrink-0 group cursor-pointer"
+          onClick={() => fileRef.current?.click()}
+          title="Click to upload picture"
+        >
+          {data.profileImage ? (
+            <img src={data.profileImage} alt={data.label} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-xl opacity-50">{genderIcon[gender]}</span>
+          )}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Camera className="w-5 h-5 text-white" />
+          </div>
+        </div>
+
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="font-bold text-base truncate leading-tight">{data.label}</span>
+          <span className="text-xs opacity-80 mt-0.5">{dobYear} — {deathYear}</span>
+          {data.birthPlace && (
+            <span className="text-[10px] opacity-70 truncate mt-0.5">{data.birthPlace}</span>
+          )}
+        </div>
+      </div>
+      <MediaStrip nodeId={id} media={data.media ?? []} />
+      <CollapseBtn id={id} isCollapsed={data.isCollapsed} />
+    </div>
+  );
+}

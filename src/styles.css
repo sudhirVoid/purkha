@@ -59,6 +59,82 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Heirloom Theme Colors */
+  --color-surface-container-low: #fcf2e4;
+  --color-primary-fixed: #d7e4f3;
+  --color-secondary-container: #ceead2;
+  --color-tertiary: #411600;
+  --color-surface-container-highest: #eae1d3;
+  --color-secondary-fixed: #ceead2;
+  --color-inverse-surface: #343027;
+  --color-surface: #fff8f1;
+  --color-inverse-on-surface: #f9f0e1;
+  --color-on-primary: #ffffff;
+  --color-on-secondary-fixed: #092011;
+  --color-surface-dim: #e2d9cb;
+  --color-primary-fixed-dim: #bbc8d7;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-primary-fixed-variant: #3c4854;
+  --color-tertiary-fixed: #ffdbcb;
+  /* Override default primary to use our custom dark blue */
+  /* --color-primary: #182430; */
+  --color-on-background: #1f1b13;
+  --color-on-secondary: #ffffff;
+  /* --color-secondary: #4c6451; */
+  --color-on-tertiary-container: #df8f67;
+  --color-on-primary-fixed: #101d28;
+  --color-tertiary-container: #5f2908;
+  --color-outline-variant: #c4c6cc;
+  --color-outline: #74777c;
+  --color-surface-bright: #fff8f1;
+  --color-tertiary-fixed-dim: #ffb692;
+  --color-primary-container: #2e3a46;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-error: #ffffff;
+  --color-on-primary-container: #97a4b2;
+  --color-on-tertiary-fixed: #341100;
+  --color-on-error-container: #93000a;
+  --color-surface-container: #f6eddf;
+  --color-surface-tint: #53606d;
+  --color-on-secondary-container: #516a57;
+  --color-surface-container-high: #f0e7d9;
+  --color-on-surface: #1f1b13;
+  /* --color-background: #fff8f1; */
+  --color-on-secondary-fixed-variant: #344c3b;
+  --color-inverse-primary: #bbc8d7;
+  --color-surface-variant: #eae1d3;
+  --color-on-surface-variant: #44474b;
+  --color-on-tertiary-fixed-variant: #713615;
+  --color-secondary-fixed-dim: #b2cdb6;
+  --color-on-tertiary: #ffffff;
+  --color-dhaka-maroon: #6B1D1D;
+  --color-terracotta-wood: #A45C40;
+  --color-slate-dusk: #2F3E46;
+  --color-lokta-light: #F5F0E6;
+  --color-lokta-border: #D1C7B7;
+
+  /* Heirloom Fonts */
+  --font-headline-md: 'Literata', serif;
+  --font-label-xs: 'Space Mono', monospace;
+  --font-headline-xl: 'Literata', serif;
+  --font-body-lg: 'Fira Sans', sans-serif;
+  --font-headline-lg-mobile: 'Literata', serif;
+  --font-headline-lg: 'Literata', serif;
+  --font-label-sm: 'Space Mono', monospace;
+  --font-body-md: 'Fira Sans', sans-serif;
+  --font-headline: 'Literata', serif;
+  --font-display: 'Literata', serif;
+  --font-body: 'Fira Sans', sans-serif;
+  --font-label: 'Space Mono', monospace;
+  
+  /* Heirloom Spacing */
+  --spacing-gutter: 24px;
+  --spacing-terrace-padding: 40px;
+  --spacing-margin-desktop: 64px;
+  --spacing-margin-mobile: 16px;
+  --spacing-unit: 8px;
 }
 
 :root {
@@ -140,5 +216,103 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-body);
+    overflow-x: hidden;
   }
 }
+
+@layer utilities {
+  .lattice-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20 L40 20 M20 0 L20 40 M0 0 L40 40 M40 0 L0 40' fill='none' stroke='%232F3E46' stroke-width='0.5' stroke-opacity='0.1'/%3E%3C/svg%3E");
+  }
+
+  .lokta-texture {
+    background-color: var(--color-surface-container-low);
+    background-image: url("https://www.transparenttextures.com/patterns/felt.png");
+    background-blend-mode: multiply;
+  }
+
+  .lattice-border {
+    position: relative;
+    border: 1px solid var(--color-outline);
+  }
+
+  .lattice-border::before {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px; right: 2px; bottom: 2px;
+    border: 1px solid var(--color-tertiary);
+    opacity: 0.2;
+    pointer-events: none;
+  }
+
+  .terrace-band {
+    border-bottom: 1px solid var(--color-outline-variant);
+    background-image: radial-gradient(var(--color-outline) 0.5px, transparent 0.5px);
+    background-size: 20px 20px;
+    opacity: 0.8;
+  }
+
+  .lungta-line {
+    stroke-dasharray: 2, 4;
+    stroke-linecap: round;
+  }
+
+  .canvas-container {
+    cursor: grab;
+    overflow: hidden;
+  }
+  .canvas-container:active {
+    cursor: grabbing;
+  }
+
+  .terracotta-btn {
+    background-color: var(--color-tertiary-container);
+    color: var(--color-tertiary-fixed);
+    transition: all 0.2s ease;
+  }
+  .terracotta-btn:hover {
+    background-color: var(--color-tertiary);
+    transform: translateY(-1px);
+  }
+
+  .floating-ui {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    backdrop-filter: blur(8px);
+  }
+
+  .prayer-flag {
+    width: 8px;
+    height: 10px;
+    position: absolute;
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 50% 80%, 0% 100%);
+  }
+
+  .terrace-step {
+    padding-top: 80px;
+    padding-bottom: 40px;
+  }
+
+  .signature-frame {
+    border: 1px solid var(--color-dhaka-maroon);
+    outline: 3px solid var(--color-slate-dusk);
+    outline-offset: 1px;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+  }
+
+  .nav-active {
+    border-bottom: 2px solid var(--color-tertiary);
+    padding-bottom: 4px;
+  }
+}
+
+@keyframes drift {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+.animate-drift { animation: drift 6s ease-in-out infinite; }

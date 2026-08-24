@@ -1,8 +1,20 @@
 import { ReactNode, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate({ to: "/login" });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <div className="bg-surface font-body-md text-on-surface overflow-hidden h-screen flex flex-col">
@@ -12,14 +24,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <span className="font-headline-lg text-headline-lg text-tertiary dark:text-tertiary-fixed-dim italic">Heirloom</span>
         </div>
         <nav className="hidden md:flex space-x-8">
-          <Link to="/" className="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:text-tertiary dark:hover:text-tertiary-fixed transition-colors">
-            Heritage
+          <Link to="/dashboard" className="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:text-tertiary dark:hover:text-tertiary-fixed transition-colors">
+            Dashboard
           </Link>
           <Link to="/builder" className="font-label-sm text-label-sm text-primary dark:text-primary-fixed border-b-2 border-tertiary pb-1 hover:text-tertiary dark:hover:text-tertiary-fixed transition-colors">
             Library
           </Link>
-          <Link to="/" className="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:text-tertiary dark:hover:text-tertiary-fixed transition-colors">
-            Archive
+          <Link to="/settings" className="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:text-tertiary dark:hover:text-tertiary-fixed transition-colors">
+            Settings
           </Link>
         </nav>
         <div className="flex items-center space-x-6">
@@ -35,16 +47,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* SideNavBar */}
-        <aside className={`bg-surface-container-low dark:bg-inverse-surface border-r border-outline-variant dark:border-outline flat no shadows z-40 hidden md:flex flex-col py-terrace-padding space-y-4 pt-8 transition-all duration-300 relative shrink-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <aside className={`bg-surface-container-low dark:bg-inverse-surface border-r border-outline-variant dark:border-outline flat no shadows z-40 hidden md:flex flex-col py-terrace-padding pt-8 transition-all duration-300 relative shrink-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
           <div className={`px-4 mb-8 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!isSidebarCollapsed && (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 w-full">
                 <div className="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant shrink-0">
                   <img className="w-full h-full object-cover" alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEOho9_qLkGjMoUnehxDs_7YReXVgC00GZqXhWIitrSbZHi6ObyKBPQ-jSh6SjZdd_tYfIWw8v1-tVYTPbPEd0aqBcaI33higf_Py77kYcDdQiz1krOzAX8NidPPHaYY27tgTSM0D_q1fT5EEm2wF76HAR3E_4hBdljTcsOTS_esXJ_O-fHvg12plUCvAYKJ1DR0rf-ATAlXX5urbFfyxP98au_HZPNdEZeiI3pHV-KfmAq8vJucc23w" />
                 </div>
                 <div className="overflow-hidden">
-                  <h2 className="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim text-lg truncate">Purkha Register</h2>
-                  <p className="font-label-sm text-label-sm opacity-70 truncate">Lineage Keeper</p>
+                  <h2 className="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim text-lg truncate">
+                    {user?.email ? user.email.split('@')[0] : "Purkha Register"}
+                  </h2>
+                  <p className="font-label-sm text-label-sm opacity-70 truncate">{user?.email || "Lineage Keeper"}</p>
                 </div>
               </div>
             )}
@@ -66,19 +80,29 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <span className="material-symbols-outlined">account_tree</span>
               {!isSidebarCollapsed && <span className="font-label-sm text-label-sm">Ancestry</span>}
             </Link>
-            <a className={`flex items-center space-x-3 text-on-surface-variant dark:text-on-surface-variant py-2 hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all duration-300 rounded-full w-full ${isSidebarCollapsed ? 'justify-center mx-0 w-12' : 'px-4 mx-2 max-w-[calc(100%-16px)]'}`} href="#">
-              <span className="material-symbols-outlined">menu_book</span>
-              {!isSidebarCollapsed && <span className="font-label-sm text-label-sm">Documents</span>}
-            </a>
+            <Link to="/dashboard" className={`flex items-center space-x-3 text-on-surface-variant dark:text-on-surface-variant py-2 hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all duration-300 rounded-full w-full ${isSidebarCollapsed ? 'justify-center mx-0 w-12' : 'px-4 mx-2 max-w-[calc(100%-16px)]'}`}>
+              <span className="material-symbols-outlined">dashboard</span>
+              {!isSidebarCollapsed && <span className="font-label-sm text-label-sm">Dashboard</span>}
+            </Link>
             <a className={`flex items-center space-x-3 text-on-surface-variant dark:text-on-surface-variant py-2 hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all duration-300 rounded-full w-full ${isSidebarCollapsed ? 'justify-center mx-0 w-12' : 'px-4 mx-2 max-w-[calc(100%-16px)]'}`} href="#">
               <span className="material-symbols-outlined">photo_library</span>
               {!isSidebarCollapsed && <span className="font-label-sm text-label-sm">Media</span>}
             </a>
-            <a className={`flex items-center space-x-3 text-on-surface-variant dark:text-on-surface-variant py-2 hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all duration-300 rounded-full w-full ${isSidebarCollapsed ? 'justify-center mx-0 w-12' : 'px-4 mx-2 max-w-[calc(100%-16px)]'}`} href="#">
+            <Link to="/settings" className={`flex items-center space-x-3 text-on-surface-variant dark:text-on-surface-variant py-2 hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-all duration-300 rounded-full w-full ${isSidebarCollapsed ? 'justify-center mx-0 w-12' : 'px-4 mx-2 max-w-[calc(100%-16px)]'}`}>
               <span className="material-symbols-outlined">settings</span>
               {!isSidebarCollapsed && <span className="font-label-sm text-label-sm">Settings</span>}
-            </a>
+            </Link>
           </nav>
+          
+          <div className="w-full mt-auto mb-4 flex flex-col items-center">
+            <button
+              onClick={handleLogout}
+              className={`flex items-center space-x-3 text-error dark:text-error-fixed py-2 hover:bg-error-container dark:hover:bg-error-container/20 transition-all duration-300 rounded-full w-full ${isSidebarCollapsed ? 'justify-center mx-0 w-12' : 'px-4 mx-2 max-w-[calc(100%-16px)]'}`}
+            >
+              <span className="material-symbols-outlined">logout</span>
+              {!isSidebarCollapsed && <span className="font-label-sm text-label-sm">Sign Out</span>}
+            </button>
+          </div>
         </aside>
 
         {/* Main Canvas Area */}

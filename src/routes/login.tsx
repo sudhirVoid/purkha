@@ -1,126 +1,87 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { auth, actionCodeSettings } from "@/lib/firebase";
+import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+
+type LoginSearch = {
+  redirect?: string;
+};
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): LoginSearch => {
+    return {
+      redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    };
+  },
   head: () => ({
     meta: [{ title: "Login & Register | Purkha Register" }],
   }),
   component: LoginPage,
 });
 
-const baseSchema = {
-  email: z
-    .string()
-    .email("Please enter a valid email address.")
-    .refine((email) => {
-      const allowedDomains = ["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "yahoo.com", "icloud.com"];
-      const domain = email.split("@")[1];
-      return allowedDomains.includes(domain?.toLowerCase() || "");
-    }, "Please use a verified email provider (Google, Outlook, Yahoo, iCloud, etc.)."),
-};
-
-const loginSchema = z.object({
-  ...baseSchema,
-  password: z.string().min(1, "Password is required"),
-});
-
-const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  ...baseSchema,
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
-const forgotSchema = z.object({
-  ...baseSchema,
-});
-
-type AuthMode = "login" | "register" | "forgot";
-
 function LoginPage() {
   const navigate = useNavigate();
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const search = Route.useSearch();
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
-  const {
-    register: registerLogin,
-    handleSubmit: handleLoginSubmit,
-    formState: { errors: loginErrors },
-  } = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema) });
-
-  const {
-    register: registerSignup,
-    handleSubmit: handleSignupSubmit,
-    formState: { errors: signupErrors },
-  } = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema) });
-
-  const {
-    register: registerForgot,
-    handleSubmit: handleForgotSubmit,
-    formState: { errors: forgotErrors },
-  } = useForm<z.infer<typeof forgotSchema>>({ resolver: zodResolver(forgotSchema) });
-
-  const onLogin = async (data: z.infer<typeof loginSchema>) => {
-    setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await res.json();
-      
-      if (!res.ok) throw new Error(result.error);
-      
-      toast.success("Authentication successful! Welcome back.");
-      // Redirect to builder after successful login
-      navigate({ to: "/builder" });
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsSubmitting(false);
+  useEffect(() => {
+    // Check if coming from a magic link
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let savedEmail = window.localStorage.getItem("emailForSignIn");
+      if (!savedEmail) {
+        savedEmail = window.prompt("Please provide your email for confirmation");
+      }
+      if (savedEmail) {
+        setIsSubmitting(true);
+        signInWithEmailLink(auth, savedEmail, window.location.href)
+          .then(async (result) => {
+            window.localStorage.removeItem("emailForSignIn");
+            
+            // Sync with backend using the ID token
+            const token = await result.user.getIdToken();
+            const res = await fetch("/api/auth/sync", {
+              method: "POST",
+              headers: { 
+                "Content-Type": "application/json", 
+                "Authorization": `Bearer ${token}` 
+              }
+            });
+            
+            if (!res.ok) throw new Error("Failed to sync user with backend");
+            
+            toast.success("Authentication successful! Welcome.");
+            navigate({ to: search.redirect || "/builder" });
+          })
+          .catch((error) => {
+            toast.error(error.message);
+            setIsSubmitting(false);
+          });
+      }
     }
-  };
+  }, [navigate, search.redirect]);
 
-  const onRegister = async (data: z.infer<typeof registerSchema>) => {
-    setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await res.json();
-      
-      if (!res.ok) throw new Error(result.error);
-      
-      toast.success(result.message);
-      setAuthMode("login");
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsSubmitting(false);
+  const onSendLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email");
+      return;
     }
-  };
-
-  const onForgot = async (data: z.infer<typeof forgotSchema>) => {
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await res.json();
+      // Ensure the redirect parameter is preserved in the magic link URL
+      const dynamicSettings = {
+        ...actionCodeSettings,
+        url: `${window.location.origin}/login?redirect=${encodeURIComponent(search.redirect || "/builder")}`,
+      };
       
-      if (!res.ok) throw new Error(result.error);
-      
-      toast.success(result.message);
-      setAuthMode("login");
+      await sendSignInLinkToEmail(auth, email, dynamicSettings);
+      window.localStorage.setItem("emailForSignIn", email);
+      setLinkSent(true);
+      toast.success("Magic link sent! Check your inbox.");
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -136,154 +97,38 @@ function LoginPage() {
         <div className="max-w-md w-full space-y-8 bg-surface-bright p-10 signature-frame relative z-10 shadow-xl">
           <div>
             <h2 className="mt-2 text-center font-headline-xl text-[36px] font-bold text-primary">
-              {authMode === "login" && "Welcome Back"}
-              {authMode === "register" && "Begin Your Journey"}
-              {authMode === "forgot" && "Recover Access"}
+              {linkSent ? "Check Your Inbox" : "Begin Your Journey"}
             </h2>
             <p className="mt-2 text-center font-body-md text-on-surface-variant">
-              {authMode === "login" && "Continue your journey into the archives."}
-              {authMode === "register" && "Create an identity to anchor your roots."}
-              {authMode === "forgot" && "Enter your email to receive a secure reset link."}
+              {linkSent 
+                ? "We've sent a magic link to your email. Click it to securely sign in." 
+                : "Enter your email to receive a secure passwordless login link."}
             </p>
           </div>
 
-          {/* Login Form */}
-          {authMode === "login" && (
-            <form className="mt-8 space-y-6" onSubmit={handleLoginSubmit(onLogin)}>
+          {!linkSent && (
+            <form className="mt-8 space-y-6" onSubmit={onSendLink}>
               <div className="space-y-4">
                 <div>
                   <label className="block font-label-sm text-label-sm text-on-surface mb-2 uppercase">Email Address</label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                     className="appearance-none block w-full px-4 py-3 border border-outline-variant bg-surface-container-low text-on-surface focus:outline-none focus:ring-1 focus:ring-terracotta-wood focus:border-terracotta-wood font-body-md transition-colors"
                     placeholder="archivist@gmail.com"
-                    {...registerLogin("email")}
                   />
-                  {loginErrors.email && <p className="mt-1 text-sm text-error font-body-md">{loginErrors.email.message}</p>}
-                </div>
-
-                <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface mb-2 uppercase">Password</label>
-                  <input
-                    type="password"
-                    className="appearance-none block w-full px-4 py-3 border border-outline-variant bg-surface-container-low text-on-surface focus:outline-none focus:ring-1 focus:ring-terracotta-wood focus:border-terracotta-wood font-body-md transition-colors"
-                    placeholder="••••••••"
-                    {...registerLogin("password")}
-                  />
-                  {loginErrors.password && <p className="mt-1 text-sm text-error font-body-md">{loginErrors.password.message}</p>}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <button type="button" onClick={() => setAuthMode("forgot")} className="font-label-sm text-dhaka-maroon hover:text-terracotta-wood uppercase transition-colors">
-                    Forgot password?
-                  </button>
                 </div>
               </div>
 
               <div>
                 <button type="submit" disabled={isSubmitting} className="group relative w-full flex justify-center py-4 px-4 border border-transparent font-label-sm text-label-sm uppercase tracking-widest text-on-primary bg-dhaka-maroon hover:bg-terracotta-wood focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-terracotta-wood transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
-                  {isSubmitting ? "Authenticating..." : "Sign In"}
+                  {isSubmitting ? "Authenticating..." : "Send Magic Link"}
                 </button>
               </div>
             </form>
           )}
-
-          {/* Register Form */}
-          {authMode === "register" && (
-            <form className="mt-8 space-y-6" onSubmit={handleSignupSubmit(onRegister)}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface mb-2 uppercase">Username</label>
-                  <input
-                    type="text"
-                    className="appearance-none block w-full px-4 py-3 border border-outline-variant bg-surface-container-low text-on-surface focus:outline-none focus:ring-1 focus:ring-terracotta-wood focus:border-terracotta-wood font-body-md transition-colors"
-                    placeholder="archivist"
-                    {...registerSignup("username")}
-                  />
-                  {signupErrors.username && <p className="mt-1 text-sm text-error font-body-md">{signupErrors.username.message}</p>}
-                </div>
-                <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface mb-2 uppercase">Email Address</label>
-                  <input
-                    type="email"
-                    className="appearance-none block w-full px-4 py-3 border border-outline-variant bg-surface-container-low text-on-surface focus:outline-none focus:ring-1 focus:ring-terracotta-wood focus:border-terracotta-wood font-body-md transition-colors"
-                    placeholder="archivist@gmail.com"
-                    {...registerSignup("email")}
-                  />
-                  {signupErrors.email && <p className="mt-1 text-sm text-error font-body-md">{signupErrors.email.message}</p>}
-                </div>
-
-                <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface mb-2 uppercase">Password</label>
-                  <input
-                    type="password"
-                    className="appearance-none block w-full px-4 py-3 border border-outline-variant bg-surface-container-low text-on-surface focus:outline-none focus:ring-1 focus:ring-terracotta-wood focus:border-terracotta-wood font-body-md transition-colors"
-                    placeholder="••••••••"
-                    {...registerSignup("password")}
-                  />
-                  {signupErrors.password && <p className="mt-1 text-sm text-error font-body-md">{signupErrors.password.message}</p>}
-                </div>
-              </div>
-
-              <div>
-                <button type="submit" disabled={isSubmitting} className="group relative w-full flex justify-center py-4 px-4 border border-transparent font-label-sm text-label-sm uppercase tracking-widest text-on-primary bg-dhaka-maroon hover:bg-terracotta-wood focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-terracotta-wood transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
-                  {isSubmitting ? "Creating Identity..." : "Create Account"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Forgot Password Form */}
-          {authMode === "forgot" && (
-            <form className="mt-8 space-y-6" onSubmit={handleForgotSubmit(onForgot)}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface mb-2 uppercase">Email Address</label>
-                  <input
-                    type="email"
-                    className="appearance-none block w-full px-4 py-3 border border-outline-variant bg-surface-container-low text-on-surface focus:outline-none focus:ring-1 focus:ring-terracotta-wood focus:border-terracotta-wood font-body-md transition-colors"
-                    placeholder="archivist@gmail.com"
-                    {...registerForgot("email")}
-                  />
-                  {forgotErrors.email && <p className="mt-1 text-sm text-error font-body-md">{forgotErrors.email.message}</p>}
-                </div>
-              </div>
-
-              <div>
-                <button type="submit" disabled={isSubmitting} className="group relative w-full flex justify-center py-4 px-4 border border-transparent font-label-sm text-label-sm uppercase tracking-widest text-on-primary bg-dhaka-maroon hover:bg-terracotta-wood focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-terracotta-wood transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
-                  {isSubmitting ? "Sending..." : "Send Reset Link"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-outline-variant" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-surface-bright text-on-surface-variant font-label-sm uppercase tracking-wider">
-                  Options
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 text-center space-x-4">
-              {authMode !== "login" && (
-                <button type="button" onClick={() => setAuthMode("login")} className="font-label-sm text-sm text-slate-dusk border-b border-slate-dusk hover:text-terracotta-wood hover:border-terracotta-wood transition-colors pb-1 uppercase tracking-wider">
-                  Back to Sign In
-                </button>
-              )}
-              {authMode !== "register" && (
-                <button type="button" onClick={() => setAuthMode("register")} className="font-label-sm text-sm text-slate-dusk border-b border-slate-dusk hover:text-terracotta-wood hover:border-terracotta-wood transition-colors pb-1 uppercase tracking-wider">
-                  Create Account
-                </button>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </PageLayout>

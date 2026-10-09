@@ -60,76 +60,107 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Heirloom Theme Colors */
-  --color-surface-container-low: #fcf2e4;
-  --color-primary-fixed: #d7e4f3;
-  --color-secondary-container: #ceead2;
-  --color-tertiary: #411600;
-  --color-surface-container-highest: #eae1d3;
-  --color-secondary-fixed: #ceead2;
-  --color-inverse-surface: #343027;
-  --color-surface: #fff8f1;
-  --color-inverse-on-surface: #f9f0e1;
+  /* ------------------------------------------------------------------
+   * PURKHA brand palette — पुर्खा · The League of Nepali People
+   *   Sindoor   : crimson of the Nepali flag, tika & sindoor
+   *   Himal     : the deep blue border of the flag / Himalayan dusk
+   *   Sayapatri : marigold garlands of Tihar & Dashain
+   *   Lokta     : handmade Nepali paper — our canvas
+   * ------------------------------------------------------------------ */
+  --color-sindoor: #B3173A;
+  --color-sindoor-deep: #8E1230;
+  --color-himal: #14295C;
+  --color-himal-light: #2A4A94;
+  --color-sayapatri: #E8A317;
+  --color-sayapatri-light: #FCE7B8;
+  --color-brass: #A87A2A;
+  --color-ink: #1E1813;
+
+  /* Material-style semantic tokens (retuned to the PURKHA palette) */
+  --color-surface-container-low: #FBF3E6;
+  --color-primary-fixed: #DCE3F7;
+  --color-secondary-container: #FCE7B8;
+  --color-tertiary: #8E1230;
+  --color-surface-container-highest: #EADDC5;
+  --color-secondary-fixed: #FCE7B8;
+  --color-inverse-surface: #14295C;
+  --color-surface: #FFFAF2;
+  --color-inverse-on-surface: #FBF4E7;
   --color-on-primary: #ffffff;
-  --color-on-secondary-fixed: #092011;
-  --color-surface-dim: #e2d9cb;
-  --color-primary-fixed-dim: #bbc8d7;
+  --color-on-secondary-fixed: #3D2A00;
+  --color-surface-dim: #E6D9C2;
+  --color-primary-fixed-dim: #B4C2E8;
   --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
-  --color-on-primary-fixed-variant: #3c4854;
-  --color-tertiary-fixed: #ffdbcb;
-  /* Override default primary to use our custom dark blue */
-  /* --color-primary: #182430; */
-  --color-on-background: #1f1b13;
+  --color-on-primary-fixed-variant: #22396F;
+  --color-tertiary-fixed: #FFE3E6;
+  --color-on-background: #1E1813;
   --color-on-secondary: #ffffff;
-  /* --color-secondary: #4c6451; */
-  --color-on-tertiary-container: #df8f67;
-  --color-on-primary-fixed: #101d28;
-  --color-tertiary-container: #5f2908;
-  --color-outline-variant: #c4c6cc;
-  --color-outline: #74777c;
-  --color-surface-bright: #fff8f1;
-  --color-tertiary-fixed-dim: #ffb692;
-  --color-primary-container: #2e3a46;
+  --color-on-tertiary-container: #FFD9DE;
+  --color-on-primary-fixed: #0A1A40;
+  --color-tertiary-container: #B3173A;
+  --color-outline-variant: #DCCFB8;
+  --color-outline: #7D7365;
+  --color-surface-bright: #FFFAF2;
+  --color-tertiary-fixed-dim: #F2B8C0;
+  --color-primary-container: #1E3570;
   --color-surface-container-lowest: #ffffff;
   --color-on-error: #ffffff;
-  --color-on-primary-container: #97a4b2;
-  --color-on-tertiary-fixed: #341100;
+  --color-on-primary-container: #A9B8E0;
+  --color-on-tertiary-fixed: #3B0711;
   --color-on-error-container: #93000a;
-  --color-surface-container: #f6eddf;
-  --color-surface-tint: #53606d;
-  --color-on-secondary-container: #516a57;
-  --color-surface-container-high: #f0e7d9;
-  --color-on-surface: #1f1b13;
-  /* --color-background: #fff8f1; */
-  --color-on-secondary-fixed-variant: #344c3b;
-  --color-inverse-primary: #bbc8d7;
-  --color-surface-variant: #eae1d3;
-  --color-on-surface-variant: #44474b;
-  --color-on-tertiary-fixed-variant: #713615;
-  --color-secondary-fixed-dim: #b2cdb6;
+  --color-surface-container: #F7EEDD;
+  --color-surface-tint: #2A4A94;
+  --color-on-secondary-container: #6B4A00;
+  --color-surface-container-high: #F1E6D2;
+  --color-on-surface: #1E1813;
+  --color-on-secondary-fixed-variant: #5A3E00;
+  --color-inverse-primary: #B4C2E8;
+  --color-surface-variant: #EADDC5;
+  --color-on-surface-variant: #4A4238;
+  --color-on-tertiary-fixed-variant: #7A1027;
+  --color-secondary-fixed-dim: #F5CF7A;
   --color-on-tertiary: #ffffff;
-  --color-dhaka-maroon: #6B1D1D;
-  --color-terracotta-wood: #A45C40;
-  --color-slate-dusk: #2F3E46;
-  --color-lokta-light: #F5F0E6;
-  --color-lokta-border: #D1C7B7;
+  /* Legacy names kept so existing components keep working */
+  --color-dhaka-maroon: #8E1230;
+  --color-terracotta-wood: #B4531A;
+  --color-slate-dusk: #14295C;
+  --color-lokta-light: #FBF4E7;
+  --color-lokta-border: #E4D3B4;
 
-  /* Heirloom Fonts */
-  --font-headline-md: 'Literata', serif;
-  --font-label-xs: 'Space Mono', monospace;
-  --font-headline-xl: 'Literata', serif;
-  --font-body-lg: 'Fira Sans', sans-serif;
-  --font-headline-lg-mobile: 'Literata', serif;
-  --font-headline-lg: 'Literata', serif;
-  --font-label-sm: 'Space Mono', monospace;
-  --font-body-md: 'Fira Sans', sans-serif;
-  --font-headline: 'Literata', serif;
-  --font-display: 'Literata', serif;
-  --font-body: 'Fira Sans', sans-serif;
-  --font-label: 'Space Mono', monospace;
-  
-  /* Heirloom Spacing */
+  /* PURKHA Fonts — Latin + Devanagari fallbacks for Nepali text */
+  --font-brand: 'Cinzel', 'Literata', serif;
+  --font-devanagari: 'Noto Serif Devanagari', 'Mukta', serif;
+  --font-headline-md: 'Literata', 'Noto Serif Devanagari', serif;
+  --font-label-xs: 'Space Mono', 'Mukta', monospace;
+  --font-headline-xl: 'Literata', 'Noto Serif Devanagari', serif;
+  --font-body-lg: 'Fira Sans', 'Mukta', sans-serif;
+  --font-headline-lg-mobile: 'Literata', 'Noto Serif Devanagari', serif;
+  --font-headline-lg: 'Literata', 'Noto Serif Devanagari', serif;
+  --font-label-sm: 'Space Mono', 'Mukta', monospace;
+  --font-body-md: 'Fira Sans', 'Mukta', sans-serif;
+  --font-headline: 'Literata', 'Noto Serif Devanagari', serif;
+  --font-display: 'Literata', 'Noto Serif Devanagari', serif;
+  --font-body: 'Fira Sans', 'Mukta', sans-serif;
+  --font-label: 'Space Mono', 'Mukta', monospace;
+
+  /* PURKHA Type Scale */
+  --text-headline-xl: clamp(2.75rem, 5.5vw, 4.75rem);
+  --text-headline-xl--line-height: 1.05;
+  --text-headline-lg: clamp(2rem, 3.4vw, 2.75rem);
+  --text-headline-lg--line-height: 1.15;
+  --text-headline-md: 1.5rem;
+  --text-headline-md--line-height: 1.3;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.7;
+  --text-body-md: 1rem;
+  --text-body-md--line-height: 1.6;
+  --text-label-sm: 0.8125rem;
+  --text-label-sm--line-height: 1.4;
+  --text-label-xs: 0.6875rem;
+  --text-label-xs--line-height: 1.4;
+
+  /* PURKHA Spacing */
   --spacing-gutter: 24px;
   --spacing-terrace-padding: 40px;
   --spacing-margin-desktop: 64px;
@@ -139,25 +170,26 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  /* PURKHA: lokta cream canvas, ink text, Himalayan-blue primary, sindoor ring */
+  --background: oklch(0.985 0.012 85);
+  --foreground: oklch(0.2 0.015 60);
+  --card: oklch(0.995 0.006 85);
+  --card-foreground: oklch(0.2 0.015 60);
+  --popover: oklch(0.995 0.006 85);
+  --popover-foreground: oklch(0.2 0.015 60);
+  --primary: oklch(0.3 0.1 265);
+  --primary-foreground: oklch(0.985 0.012 85);
+  --secondary: oklch(0.95 0.02 85);
+  --secondary-foreground: oklch(0.3 0.1 265);
+  --muted: oklch(0.95 0.02 85);
+  --muted-foreground: oklch(0.5 0.03 60);
+  --accent: oklch(0.93 0.06 85);
+  --accent-foreground: oklch(0.3 0.1 265);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.88 0.03 80);
+  --input: oklch(0.88 0.03 80);
+  --ring: oklch(0.5 0.18 18);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -299,6 +331,66 @@
     outline-offset: 1px;
   }
 
+  /* Dhaka textile band — signature PURKHA ornament */
+  .dhaka-band {
+    height: 10px;
+    background-color: var(--color-sindoor-deep);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Crect width='24' height='12' fill='%238E1230'/%3E%3Cpath d='M0 6 L6 0 L12 6 L6 12 Z' fill='%2314295C'/%3E%3Cpath d='M12 6 L18 0 L24 6 L18 12 Z' fill='%23E8A317'/%3E%3Cpath d='M6 4 L8 6 L6 8 L4 6 Z' fill='%23FBF4E7'/%3E%3Cpath d='M18 4 L20 6 L18 8 L16 6 Z' fill='%238E1230'/%3E%3C/svg%3E");
+    background-size: 20px 10px;
+    background-repeat: repeat-x;
+  }
+
+  .font-brand {
+    font-family: var(--font-brand);
+  }
+  .font-devanagari {
+    font-family: var(--font-devanagari);
+  }
+
+  .text-sindoor-gradient {
+    background-image: linear-gradient(100deg, var(--color-sindoor-deep) 0%, var(--color-sindoor) 45%, var(--color-terracotta-wood) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .paper-glow {
+    background-image:
+      radial-gradient(60% 50% at 85% 20%, rgb(232 163 23 / 0.18), transparent 70%),
+      radial-gradient(50% 60% at 10% 90%, rgb(179 23 58 / 0.10), transparent 70%);
+  }
+
+  .brand-card {
+    transition: translate 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease;
+  }
+  .brand-card:hover {
+    translate: 0 -8px;
+    box-shadow: 0 24px 48px -24px rgb(20 41 92 / 0.35);
+  }
+
+  /* Lungta (prayer flags) */
+  .lungta-flag {
+    transform-origin: top center;
+    animation: sway 4.5s ease-in-out infinite;
+    --animation-reduced: none;
+  }
+
+  .animate-spin-slow {
+    animation: purkha-spin 40s linear infinite;
+    --animation-reduced: none;
+  }
+
+  /* Scroll-driven reveal — progressive enhancement only */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        animation: reveal-up linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 28%;
+      }
+    }
+  }
+
   .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     vertical-align: middle;
@@ -315,4 +407,32 @@
   50% { transform: translateY(-5px); }
   100% { transform: translateY(0px); }
 }
-.animate-drift { animation: drift 6s ease-in-out infinite; }
+.animate-drift { animation: drift 6s ease-in-out infinite; --animation-reduced: none; }
+
+@keyframes sway {
+  0%, 100% { rotate: -4deg; }
+  50% { rotate: 4deg; }
+}
+
+@keyframes purkha-spin {
+  to { rotate: 360deg; }
+}
+
+@keyframes reveal-up {
+  from { opacity: 0; translate: 0 32px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+/* Respect reduced-motion: decorative loops opt out via --animation-reduced */
+@property --animation-reduced {
+  syntax: "*";
+  inherits: false;
+  initial-value: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift,
+  .animate-spin-slow,
+  .lungta-flag {
+    animation: var(--animation-reduced) !important;
+  }
+}

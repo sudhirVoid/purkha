@@ -1,217 +1,309 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { BRAND, PurkhaMark } from "@/components/brand/PurkhaLogo";
+import { PrayerFlags } from "@/components/brand/PrayerFlags";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Heirloom | Purkha Register" },
-      { name: "description", content: "Document Your Legacy - Preserve your family history on digital Lokta." },
+      { title: "PURKHA — The Ancestors · The League of Nepali People" },
+      {
+        name: "description",
+        content:
+          "Build your family's vamshavali, honor your purkha and connect with the league of Nepali people across the world.",
+      },
     ],
   }),
   component: LandingPage,
 });
 
+const STATS = [
+  { value: "142", label: "Jati & Janajati", note: "communities, one league" },
+  { value: "124", label: "Mother tongues", note: "every name, in its own voice" },
+  { value: "77", label: "Districts", note: "from Taplejung to Darchula" },
+  { value: "∞", label: "Diaspora", note: "wherever Nepalis call home" },
+];
+
+const PILLARS = [
+  {
+    icon: "account_tree",
+    title: "Vamshavali Builder",
+    np: "वंशावली",
+    body: "Draw your lineage generation by generation — parents, partners and children — on an infinite canvas or a collapsible, colour-coded family tree.",
+    img: "/brand/pillar_tree_1791560975133.jpg",
+    alt: "A family tree visualization strung like lungta prayer flags",
+  },
+  {
+    icon: "travel_explore",
+    title: "From Thalo to the World",
+    np: "थलो",
+    body: "Record birthplaces, the ancestral thalo and where every branch lives today — from Ilam and Jumla to Doha, London and Denver.",
+    img: "/brand/pillar_thalo_1791560987590.jpg",
+    alt: "A traditional carved Newari lattice window",
+  },
+  {
+    icon: "graphic_eq",
+    title: "Voices of the Elders",
+    np: "सम्झना",
+    body: "Attach photographs, voice recordings and stories to each ancestor, so the memory of every hajurba and hajurama outlives us all.",
+    img: "/brand/pillar_voices_1791561001178.jpg",
+    alt: "Aged documents with Nepali calligraphy on lokta paper",
+  },
+];
+
+const STEPS = [
+  { n: "१", title: "Plant the root", body: "Begin with the eldest purkha you know — a great-grandparent, a name from a story." },
+  { n: "२", title: "Grow the branches", body: "Add partners and children. Each couple folds open to reveal the next generation." },
+  { n: "३", title: "Share with your kul", body: "Invite family to fill the gaps, so the vamshavali grows with every voice." },
+];
+
+const LINEAGES = [
+  { title: "The Shakya Genealogy", meta: "324 descendants · Kathmandu Valley" },
+  { title: "The Sherpa Archives", meta: "156 descendants · Solukhumbu" },
+  { title: "Tharu Lineage Record", meta: "412 descendants · Terai" },
+];
+
 function LandingPage() {
   return (
     <PageLayout>
-      {/* Hero Section */}
-      <section className="relative min-h-[921px] flex items-center overflow-hidden lokta-texture bg-lokta-light border-b border-lokta-border">
-        <div className="absolute inset-0 lattice-pattern pointer-events-none opacity-40"></div>
-        <div className="px-margin-desktop grid grid-cols-12 gap-gutter relative z-10 w-full py-terrace-padding">
-          <div className="col-span-12 md:col-span-7 flex flex-col justify-center space-y-8">
-            <div className="flex items-center gap-2">
-              <span className="w-12 h-[1px] bg-dhaka-maroon"></span>
-              <span className="font-label-xs text-label-xs text-dhaka-maroon uppercase">
-                Authentic Lineage Records
+      {/* ───────────── Hero ───────────── */}
+      <section
+        aria-labelledby="hero-title"
+        className="relative overflow-hidden lokta-texture bg-lokta-light border-b border-lokta-border"
+      >
+        <div className="absolute inset-0 paper-glow pointer-events-none" />
+        <div className="absolute inset-0 lattice-pattern pointer-events-none opacity-30" />
+        <PrayerFlags className="absolute top-0 left-0 opacity-90" count={18} />
+
+        <div className="relative z-10 grid grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop pt-24 pb-20 lg:min-h-[calc(100svh-72px)] items-center">
+          <div className="col-span-12 lg:col-span-7 flex flex-col justify-center space-y-8">
+            <div className="flex items-center gap-3">
+              <span className="h-px w-12 bg-sindoor" />
+              <span className="font-label-xs text-label-xs uppercase tracking-[0.24em] text-sindoor">
+                {BRAND.meaning} · {BRAND.league}
               </span>
             </div>
-            <h1 className="font-headline-xl text-headline-xl text-primary max-w-2xl">
-              Document Your <span className="italic text-terracotta-wood">Legacy</span>
+
+            <h1 id="hero-title" className="font-headline-xl text-headline-xl text-himal max-w-3xl">
+              Honor your <span className="italic text-sindoor-gradient">purkha.</span>
+              <br />
+              Carry their names forward.
             </h1>
-            <p className="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
-              Preserve your family history on digital Lokta. A contemporary archival experience
-              inspired by the enduring craftsmanship of the Himalayas.
+
+            <p className="font-devanagari text-2xl md:text-3xl text-sindoor-deep" lang="ne">
+              {BRAND.motto}
             </p>
-            <div className="flex gap-4 items-center">
-              <Link to="/builder" className="bg-primary text-on-primary font-label-sm text-label-sm px-8 py-4 flex items-center gap-2 hover:bg-slate-dusk transition-colors">
-                Begin Archive <span className="material-symbols-outlined">arrow_right_alt</span>
+
+            <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+              PURKHA is the league of Nepali people — a shared home to build your family's
+              vamshavali, remember the ones who came before, and pass their stories to the
+              generations who follow.
+            </p>
+
+            <div className="flex flex-wrap gap-4 items-center pt-2">
+              <Link
+                to="/builder"
+                id="hero-begin-vamshavali"
+                className="group inline-flex items-center gap-2 bg-sindoor-deep px-8 py-4 font-label-sm text-label-sm uppercase tracking-[0.16em] text-lokta-light shadow-[0_12px_30px_-12px_rgb(142_18_48/0.7)] transition-all hover:bg-himal hover:-translate-y-0.5"
+              >
+                Begin your Vamshavali
+                <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                  arrow_right_alt
+                </span>
               </Link>
-              <button className="border border-slate-dusk text-slate-dusk font-label-sm text-label-sm px-8 py-4 hover:bg-surface-container transition-colors">
-                View Sample Registry
-              </button>
+              <a
+                href="#lineages"
+                id="hero-explore-lineages"
+                className="inline-flex items-center gap-2 border border-himal px-8 py-4 font-label-sm text-label-sm uppercase tracking-[0.16em] text-himal transition-colors hover:bg-himal hover:text-lokta-light"
+              >
+                Explore lineages
+              </a>
             </div>
           </div>
-          <div className="col-span-12 md:col-span-5 flex justify-center items-center">
-            <div className="relative w-full aspect-[4/5] max-w-sm">
-              <div className="absolute -inset-4 border border-lokta-border rotate-3 -z-10 bg-white/50"></div>
-              <div className="w-full h-full signature-frame overflow-hidden bg-surface-container-high animate-drift">
+
+          <div className="col-span-12 lg:col-span-5 flex justify-center items-center pt-8 lg:pt-0">
+            <div className="relative w-full max-w-md">
+              <div className="absolute -inset-5 border border-lokta-border rotate-3 bg-white/40" />
+              <div className="relative signature-frame overflow-hidden bg-surface-container-high animate-drift">
                 <img
-                  className="w-full h-full object-cover"
-                  alt="A high-quality editorial photograph of a weathered, handmade Lokta paper book"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvV7YHWL6AitGluGx3_urHNFYhGAHCuV3gfqycPkh6Pg97oO1deE8tqQmtttwkjum5di8npY75G-u4ZhqDPtH6Wb-IsnJAne3XzwJzBgCq12d-9kIZSN5ahlY_zW34s7m6jGau_AsDVe6SYIoiNE3YLjhmWGV7D7GRzxsF1wySuW8Dn8lPdEkjW6XuwqO9x6NuAtXRoGUHX_mCkcvw3Z9yP-9ZJ1D90g0vn1dmeXUFhVYvPTCCzCmOTQ"
+                  className="w-full h-auto object-cover"
+                  src="/brand/vamshavali-hero.jpg"
+                  alt="An illustrated vamshavali — a great tree with ancestral medallions, rooted before the Himalaya and a pagoda temple"
+                  width={896}
+                  height={1200}
+                  fetchPriority="high"
                 />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-dhaka-maroon text-white p-4 font-label-xs text-label-xs uppercase tracking-widest flex flex-col items-center">
-                <span>Vol.</span>
-                <span className="text-xl font-bold">01</span>
+
+              {/* Floating sample node */}
+              <div className="absolute -left-6 md:-left-14 top-[18%] w-56 bg-surface-bright/95 backdrop-blur border border-lokta-border shadow-xl p-4 border-l-4 border-l-himal">
+                <p className="font-label-xs text-label-xs uppercase tracking-widest text-on-surface-variant">
+                  Generation I · Root
+                </p>
+                <p className="font-headline-md text-lg text-himal leading-tight mt-1">Prithvi Narayan Shah</p>
+                <p className="font-label-xs text-label-xs text-on-surface-variant mt-1">1723 – 1775 · Gorkha</p>
+              </div>
+
+              <div className="absolute -bottom-7 -right-4 md:-right-8 bg-sindoor-deep text-lokta-light px-5 py-4 flex items-center gap-3 shadow-xl">
+                <PurkhaMark className="h-9 w-auto" title="" />
+                <div className="leading-tight">
+                  <p className="font-devanagari text-lg" lang="ne">वंशावली</p>
+                  <p className="font-label-xs text-[10px] uppercase tracking-[0.2em] text-sayapatri">Vamshavali</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        {/* Terraced Ornament */}
-        <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-surface to-transparent"></div>
       </section>
 
-      {/* "The Modern Manuscript" Section */}
-      <section className="bg-surface py-terrace-padding px-margin-desktop">
-        <div className="text-center mb-16 space-y-4">
-          <span className="font-label-sm text-label-sm text-terracotta-wood tracking-[0.2em] uppercase">
-            The Craft
+      {/* ───────────── League stats ───────────── */}
+      <section aria-label="The league in numbers" className="bg-himal text-lokta-light">
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-lokta-light/10">
+          {STATS.map((s) => (
+            <div key={s.label} className="px-6 md:px-10 py-10 text-center md:text-left">
+              <p className="font-brand text-4xl md:text-5xl font-bold text-sayapatri">{s.value}</p>
+              <p className="mt-2 font-label-sm text-label-sm uppercase tracking-[0.18em]">{s.label}</p>
+              <p className="mt-1 font-body-md text-sm text-lokta-light/60">{s.note}</p>
+            </div>
+          ))}
+        </div>
+        <div className="dhaka-band" />
+      </section>
+
+      {/* ───────────── Pillars ───────────── */}
+      <section aria-labelledby="pillars-title" className="bg-surface py-24 px-margin-mobile md:px-margin-desktop">
+        <div className="text-center mb-16 space-y-4 reveal">
+          <span className="font-label-sm text-label-sm text-sindoor tracking-[0.24em] uppercase">
+            What PURKHA keeps
           </span>
-          <h2 className="font-headline-lg text-headline-lg text-primary">The Modern Manuscript</h2>
-          <div className="w-24 h-1 bg-lokta-border mx-auto"></div>
+          <h2 id="pillars-title" className="font-headline-lg text-headline-lg text-himal">
+            A living archive for every Nepali family
+          </h2>
+          <div className="mx-auto h-1 w-24 bg-gradient-to-r from-sindoor via-sayapatri to-himal" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          {/* Card 1 */}
-          <div className="flex flex-col bg-lokta-light border border-lokta-border p-8 space-y-6 hover:translate-y-[-8px] transition-transform duration-500">
-            <div className="h-48 w-full bg-surface-container relative overflow-hidden group">
-              <div className="absolute inset-0 lattice-pattern group-hover:opacity-60 transition-opacity"></div>
-              <img
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                alt="A close-up shot of a traditional Newari lattice window design"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuClHiWl3_dZzjLaq32FvmDR-n-hfD27McgsWwYwHBLAsa4yDlbP04qh6x2ikxMqtgFJiszGXiZtOhtD1foNf9Fofc9Axj1J9c64oOTQwx1cBMbCo0zKRklI_CjhTtosL_TIEea-FDIyhLO73SHjwu9bNKGzC7dRqKbtIohnVr_s3Ap7-PZ8kkjdlGPCGsQ2tD8FHUmugSIMvIHC4APryNgMgMIfiKRY5UxWVXmGdZqIS1Yl3hl2YS10Ww"
-              />
-            </div>
-            <div className="space-y-3">
-              <h3 className="font-headline-md text-headline-md text-primary">Artisanal Nodes</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                Every branch of your ancestry is represented by digital modules inspired by
-                wood-carving motifs.
-              </p>
-              <Link to="/" className="inline-flex items-center gap-1 font-label-sm text-label-sm text-dhaka-maroon font-bold group">
-                Learn more <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">chevron_right</span>
-              </Link>
-            </div>
-          </div>
-          {/* Card 2 */}
-          <div className="flex flex-col bg-lokta-light border border-lokta-border p-8 space-y-6 mt-12 hover:translate-y-[-8px] transition-transform duration-500">
-            <div className="h-48 w-full bg-surface-container relative overflow-hidden group">
-              <div className="absolute inset-0 lattice-pattern group-hover:opacity-60 transition-opacity"></div>
-              <img
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                alt="A stack of beautifully aged documents with elegant Nepali calligraphy written on yellowed, fibrous Lokta paper."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZIm3NP52svBQGJ_T6hf2XFUz7TQgBgjxiDFqEz33iaCYDy95zyoSiXmS632wYMtiyS05z-QJQFE0GNIrpNqQwMMFozJ8cFSjSodsKbXOTF7eEMc4jex46ho4BItwAGaBeCRfAK-jzfVYlnDMsDIq9UbEpWst_4f5PRG1ATytX0qztGQjsG81rSbCkGHcu2LEov_eBfTROJMtyPG-fkfxlMsecYXNtZmKFGPOr6y-NiVwHmA8Ko4GIdw"
-              />
-            </div>
-            <div className="space-y-3">
-              <h3 className="font-headline-md text-headline-md text-primary">Digital Archiving</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                Preserve physical artifacts through high-fidelity digital rendering that maintains
-                their tactile essence.
-              </p>
-              <Link to="/" className="inline-flex items-center gap-1 font-label-sm text-label-sm text-dhaka-maroon font-bold group">
-                Learn more <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">chevron_right</span>
-              </Link>
-            </div>
-          </div>
-          {/* Card 3 */}
-          <div className="flex flex-col bg-lokta-light border border-lokta-border p-8 space-y-6 hover:translate-y-[-8px] transition-transform duration-500">
-            <div className="h-48 w-full bg-surface-container relative overflow-hidden group">
-              <div className="absolute inset-0 lattice-pattern group-hover:opacity-60 transition-opacity"></div>
-              <img
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                alt="A conceptual digital family tree visualization using a 'Lungta' prayer flag aesthetic"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAe1VmmR1nN5_VefQWrsXgxpRhSbi2m-2yt5x3sBLmuNSHy4TyClv4MTfOIsqvMxwsKaE68FIBC1yID6BLs9gn0fCUczrmooqsarS_Ek3HGKazHRIq_SH8u_qyoaK0CdOBiplcMw11ZSCe9HvpbIqu_YkwcAWEEBQb3RAS87lSiG_vO_b0gZVYSg_58fkKS0AOhe_oauBTNwD57I-DIhoEFN-67K9w44QDnLWexVu7e6hrd9KVWBFiWcQ"
-              />
-            </div>
-            <div className="space-y-3">
-              <h3 className="font-headline-md text-headline-md text-primary">Lineage Visuals</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                View your family connections through flowing Lungta-inspired relationship maps that
-                breathe life into data.
-              </p>
-              <Link to="/" className="inline-flex items-center gap-1 font-label-sm text-label-sm text-dhaka-maroon font-bold group">
-                Learn more <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">chevron_right</span>
-              </Link>
-            </div>
-          </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          {PILLARS.map((p, i) => (
+            <article
+              key={p.title}
+              className={`brand-card reveal flex flex-col bg-lokta-light border border-lokta-border p-8 space-y-6 ${i === 1 ? "md:mt-12" : ""}`}
+            >
+              <div className="relative h-48 w-full overflow-hidden bg-surface-container group">
+                <img
+                  className="h-full w-full object-cover grayscale-[60%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
+                  src={p.img}
+                  alt={p.alt}
+                  loading="lazy"
+                  width={600}
+                  height={384}
+                />
+                <span className="absolute top-3 left-3 flex h-10 w-10 items-center justify-center bg-sindoor-deep text-lokta-light">
+                  <span className="material-symbols-outlined">{p.icon}</span>
+                </span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="font-headline-md text-headline-md text-himal">{p.title}</h3>
+                  <span className="font-devanagari text-sindoor" lang="ne">{p.np}</span>
+                </div>
+                <p className="font-body-md text-body-md text-on-surface-variant">{p.body}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
-      {/* "From the Volumes" Showcase */}
-      <section className="bg-surface-container-low py-terrace-padding border-y border-lokta-border">
-        <div className="px-margin-desktop grid grid-cols-12 gap-gutter items-center">
-          <div className="col-span-12 md:col-span-4 space-y-6">
-            <h2 className="font-headline-lg text-headline-lg text-primary">From the Volumes</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Explore curated family registries from our community. Every lineage is a volume of
-              history waiting to be read.
+      {/* ───────────── How it works ───────────── */}
+      <section aria-labelledby="steps-title" className="relative bg-surface-container-low border-y border-lokta-border py-24 px-margin-mobile md:px-margin-desktop overflow-hidden">
+        <div className="absolute inset-0 lattice-pattern opacity-20 pointer-events-none" />
+        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-4 space-y-5 reveal">
+            <span className="font-label-sm text-label-sm text-sindoor tracking-[0.24em] uppercase">How it works</span>
+            <h2 id="steps-title" className="font-headline-lg text-headline-lg text-himal">
+              From one name to a whole vamsha
+            </h2>
+            <p className="font-body-md text-on-surface-variant">
+              Most families can name three generations. Together, we can name ten — and make sure the
+              eleventh knows where it comes from.
             </p>
-            <div className="pt-4 flex flex-col gap-4">
-              <div className="flex items-center gap-4 p-4 border border-lokta-border bg-surface-bright group hover:bg-terracotta-wood hover:text-white transition-all cursor-pointer">
-                <span className="font-label-sm text-label-sm font-bold opacity-30 group-hover:opacity-100">
-                  01
+          </div>
+          <ol className="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {STEPS.map((s) => (
+              <li key={s.n} className="reveal relative bg-surface-bright border border-lokta-border p-7 pt-10">
+                <span
+                  className="absolute -top-6 left-6 flex h-12 w-12 items-center justify-center rounded-full bg-himal font-devanagari text-2xl text-sayapatri ring-4 ring-surface-container-low"
+                  lang="ne"
+                  aria-hidden="true"
+                >
+                  {s.n}
                 </span>
-                <div className="flex-1">
-                  <p className="font-headline-md text-[18px] leading-tight">The Shakya Genealogy</p>
-                  <p className="font-label-xs text-label-xs opacity-70">
-                    324 Descendants • Kathmandu Valley
-                  </p>
-                </div>
-                <span className="material-symbols-outlined">menu_book</span>
-              </div>
-              <div className="flex items-center gap-4 p-4 border border-lokta-border bg-surface-bright group hover:bg-terracotta-wood hover:text-white transition-all cursor-pointer">
-                <span className="font-label-sm text-label-sm font-bold opacity-30 group-hover:opacity-100">
-                  02
-                </span>
-                <div className="flex-1">
-                  <p className="font-headline-md text-[18px] leading-tight">The Sherpa Archives</p>
-                  <p className="font-label-xs text-label-xs opacity-70">
-                    156 Descendants • Solu-Khumbu
-                  </p>
-                </div>
-                <span className="material-symbols-outlined">menu_book</span>
-              </div>
-              <div className="flex items-center gap-4 p-4 border border-lokta-border bg-surface-bright group hover:bg-terracotta-wood hover:text-white transition-all cursor-pointer">
-                <span className="font-label-sm text-label-sm font-bold opacity-30 group-hover:opacity-100">
-                  03
-                </span>
-                <div className="flex-1">
-                  <p className="font-headline-md text-[18px] leading-tight">Tharu Lineage Record</p>
-                  <p className="font-label-xs text-label-xs opacity-70">
-                    412 Descendants • Terai Region
-                  </p>
-                </div>
-                <span className="material-symbols-outlined">menu_book</span>
-              </div>
-            </div>
+                <h3 className="font-headline-md text-xl text-himal">{s.title}</h3>
+                <p className="mt-2 font-body-md text-on-surface-variant">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ───────────── Lineages of the League ───────────── */}
+      <section id="lineages" aria-labelledby="lineages-title" className="bg-surface py-24 scroll-mt-20">
+        <div className="px-margin-mobile md:px-margin-desktop grid grid-cols-12 gap-gutter items-center">
+          <div className="col-span-12 md:col-span-4 space-y-6 reveal">
+            <span className="font-label-sm text-label-sm text-sindoor tracking-[0.24em] uppercase">From the league</span>
+            <h2 id="lineages-title" className="font-headline-lg text-headline-lg text-himal">Lineages of the League</h2>
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              From the Valley to the high Himal and the plains of the Terai — every lineage is a
+              chapter of Nepal's story waiting to be read.
+            </p>
+            <ul className="pt-2 flex flex-col gap-3">
+              {LINEAGES.map((l, i) => (
+                <li
+                  key={l.title}
+                  className="group flex items-center gap-4 p-4 border border-lokta-border bg-surface-bright cursor-pointer transition-all hover:bg-himal hover:text-lokta-light hover:border-himal"
+                >
+                  <span className="font-devanagari text-xl text-sindoor group-hover:text-sayapatri" lang="ne">
+                    {["०१", "०२", "०३"][i]}
+                  </span>
+                  <div className="flex-1">
+                    <p className="font-headline-md text-[18px] leading-tight">{l.title}</p>
+                    <p className="font-label-xs text-label-xs opacity-70 mt-0.5">{l.meta}</p>
+                  </div>
+                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                    arrow_forward
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="col-span-12 md:col-span-8">
-            <div className="grid grid-cols-2 gap-4 h-[500px]">
-              <div className="row-span-2 relative border-r-4 border-dhaka-maroon overflow-hidden signature-frame">
+            <div className="grid grid-cols-2 gap-4 h-[520px]">
+              <div className="row-span-2 relative overflow-hidden signature-frame">
                 <img
                   className="w-full h-full object-cover"
-                  alt="A portrait-style archival photo of an elderly Himalayan patriarch"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxV9HeNLEozNztx0X-qHwnmA-vPn3KbvRuifRv35ZyFaqIiuGsZnJZNiQUYwwwe9Y2PnVRqhOCq90d1Q9xdSzUFzNnjq0zvp3MPL7GelISyp8mGmK6zT7jOQ1tQYJykCPDGfO_bc_B9Pd9H-EmXOki0BgdtI0nfV5q-7GzV1Go6sUKhqEyzvFg51gf0vvl9VcYZydpGSI6cEu4_6-geyb1vNc5UZiYlD8X0WOS0ivReDVBpr-0YNPT5g"
+                  alt="An archival portrait of an elderly Himalayan patriarch"
+                  src="/brand/lineage_patriarch_1791561013270.jpg"
+                  loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <p className="font-label-xs text-label-xs uppercase">Featured Lineage</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-himal/85 via-himal/10 to-transparent" />
+                <div className="absolute bottom-5 left-5 text-lokta-light">
+                  <p className="font-label-xs text-label-xs uppercase tracking-[0.2em] text-sayapatri">Featured purkha</p>
                   <p className="font-headline-md text-headline-md">Harka Bahadur</p>
                 </div>
               </div>
               <div className="relative overflow-hidden signature-frame">
                 <img
                   className="w-full h-full object-cover"
-                  alt="A detailed digital rendering of a family tree diagram"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmvLPetLiwX6Y9KzG5ejJhslKjETPxMkg7gIRvMsK7vyiQ97PaMrE-X9ElsvDhoNjj37Jdo_wttCBdj4_DkEQrq6STR5VVW7jNcHVUDh-9VAqpgqA74Lo70xlIm32uSn-4XMJ-A0SpECOg69c6pnNug7IiEOO3KIkPxjKcR6k9hv5pbknU7psTOTMBEaT-iQ796FiUW8vOXb2vwbj4hpiMlFUPD3s4zc46tEw3ffUfDW8A1UGrT37HAg"
+                  alt="A detailed rendering of a family tree diagram"
+                  src="/brand/lineage_diagram_1791561025890.jpg"
+                  loading="lazy"
                 />
               </div>
               <div className="relative overflow-hidden signature-frame">
                 <img
                   className="w-full h-full object-cover"
-                  alt="An atmospheric shot of an archive room filled with floor-to-ceiling wooden shelves of Lokta paper scrolls"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvSToi3UHUsLIdXJU7mG6DkFPvsBWGcs31tzFEJ_siE6_drdPqmFBH5-asLYSqVvGo3rvvwaf36lsAjwORTGxtvlypW8TNRbq4EJK-Ah-mMauJ-v1ufpjxFhcS41i7G-vaJ85WMi1UwOBMH-lcEL2WKNjpurq9NN-KEzN5aWMJNlNaQjMqVzc92DvuaEJTpQUgnQxWcMdQ4be3NBms8ttjetha9zmxchKfe4UN3_II_CtRunEQwj-vOQ"
+                  alt="An archive room of wooden shelves holding lokta paper scrolls"
+                  src="/brand/lineage_archive_1791561043606.jpg"
+                  loading="lazy"
                 />
               </div>
             </div>
@@ -219,29 +311,67 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA: The Ancestry Node */}
-      <section className="py-24 px-margin-desktop flex justify-center">
-        <div className="max-w-4xl w-full bg-surface-container-high border-l-[6px] border-dhaka-maroon p-12 flex flex-col md:flex-row items-center gap-12 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <span className="material-symbols-outlined text-[120px]">account_tree</span>
+      {/* ───────────── Manifesto ───────────── */}
+      <section
+        id="manifesto"
+        aria-labelledby="manifesto-title"
+        className="relative bg-sindoor-deep text-lokta-light py-24 px-margin-mobile md:px-margin-desktop overflow-hidden scroll-mt-20"
+      >
+        <div className="absolute inset-0 lattice-pattern opacity-[0.15] pointer-events-none invert" />
+        <PurkhaMark className="absolute -right-10 -bottom-10 h-[380px] w-auto opacity-[0.07]" title="" />
+        <div className="relative max-w-4xl mx-auto text-center space-y-8 reveal">
+          <span className="font-label-sm text-label-sm uppercase tracking-[0.28em] text-sayapatri">Our story</span>
+          <h2 id="manifesto-title" className="font-devanagari text-4xl md:text-6xl leading-tight" lang="ne">
+            {BRAND.motto}
+          </h2>
+          <p className="font-headline-md text-xl md:text-2xl italic text-lokta-light/85">
+            "{BRAND.mottoEnglish}."
+          </p>
+          <p className="font-body-lg text-body-lg text-lokta-light/75 max-w-2xl mx-auto">
+            Purkha means ancestors. We built PURKHA because a nation's memory lives in its families —
+            in the names whispered at Shraddha, the stories told around the fire at Dashain, the
+            photographs fading in a tin box. This is a league for all of us: every jati, every
+            language, every village, every Nepali far from home.
+          </p>
+        </div>
+      </section>
+
+      {/* ───────────── Final CTA ───────────── */}
+      <section className="py-24 px-margin-mobile md:px-margin-desktop flex justify-center bg-surface">
+        <div className="reveal max-w-5xl w-full bg-surface-container-high border-l-[6px] border-sindoor-deep p-10 md:p-14 flex flex-col md:flex-row items-center gap-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-[0.07]">
+            <span className="material-symbols-outlined text-[140px] text-himal">account_tree</span>
           </div>
           <div className="flex-1 space-y-6 relative z-10">
-            <h2 className="font-headline-xl text-headline-lg text-primary">
-              Ready to anchor your roots?
+            <h2 className="font-headline-xl text-headline-lg text-himal">
+              Your purkha are waiting to be remembered.
             </h2>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
-              Join thousands of families in the Purkha Register. Create your first lineage node
-              today and start connecting the threads of your past.
+              Join the league. Plant your first root today and start connecting the threads of your
+              family's past — for the children who will one day ask, "where do we come from?"
             </p>
-            <Link to="/builder" className="bg-dhaka-maroon text-on-primary font-label-sm text-label-sm px-10 py-5 uppercase tracking-widest hover:opacity-90 transition-opacity inline-block">
-              Create Your Branch
+            <Link
+              to="/builder"
+              id="cta-plant-root"
+              className="inline-flex items-center gap-2 bg-himal px-10 py-5 font-label-sm text-label-sm uppercase tracking-[0.18em] text-lokta-light transition-colors hover:bg-sindoor-deep"
+            >
+              Plant your first root
+              <span className="material-symbols-outlined">park</span>
             </Link>
           </div>
-          <div className="w-48 h-48 rounded-full border-2 border-dashed border-terracotta-wood p-4 animate-spin-[20s]">
-            <div className="w-full h-full rounded-full bg-lokta-light flex items-center justify-center text-center p-4">
-              <span className="font-label-xs text-label-xs text-terracotta-wood uppercase font-bold">
-                12,000+ Centuries Recorded
-              </span>
+          <div className="relative h-52 w-52 shrink-0">
+            <svg viewBox="0 0 200 200" className="absolute inset-0 animate-spin-slow" aria-hidden="true">
+              <defs>
+                <path id="motto-ring" d="M100,100 m-82,0 a82,82 0 1,1 164,0 a82,82 0 1,1 -164,0" />
+              </defs>
+              <text className="fill-sindoor" style={{ fontFamily: "var(--font-label)", fontSize: 11, letterSpacing: 4 }}>
+                <textPath href="#motto-ring">
+                  PURKHA · THE ANCESTORS · THE LEAGUE OF NEPALI PEOPLE ·
+                </textPath>
+              </text>
+            </svg>
+            <div className="absolute inset-8 rounded-full bg-lokta-light border border-lokta-border flex items-center justify-center">
+              <PurkhaMark className="h-20 w-auto" title="" />
             </div>
           </div>
         </div>

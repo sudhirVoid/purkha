@@ -2,6 +2,8 @@ import type { Node } from "@xyflow/react";
 
 export type Kind = "person" | "bond";
 export type Gender = "male" | "female" | "other";
+export type BondStatus = "married" | "divorced" | "separated" | "widowed";
+export type ChildRelation = "biological" | "adopted" | "foster" | "step";
 export type MediaKind = "image" | "video" | "audio";
 export type MediaItem = { id: string; kind: MediaKind; url: string; name: string };
 
@@ -11,6 +13,8 @@ export type FamilyNodeData = {
   gender?: Gender;
   media?: MediaItem[];
   marriageDate?: string;
+  divorceDate?: string;
+  bondStatus?: BondStatus;
   address?: string;
   birthPlace?: string;
   dob?: string;
@@ -27,12 +31,16 @@ export type Actions = {
   addParent: (id: string, label: "Father" | "Mother") => void;
   addSpouse: (id: string) => void;
   addSibling: (id: string) => void;
-  addChild: (id: string) => void;
+  addChild: (id: string, relation?: ChildRelation) => void;
   remove: (id: string) => void;
   rename: (id: string, label: string) => void;
   setGender: (id: string, g: Gender) => void;
   setProfileImage: (id: string, url: string | undefined) => void;
   setMarriageDate: (id: string, d: string) => void;
+  setDivorceDate: (id: string, d: string) => void;
+  setBondStatus: (id: string, status: BondStatus) => void;
+  setChildRelation: (edgeId: string, relation: ChildRelation) => void;
+  getChildRelation: (edgeId: string) => ChildRelation;
   addMedia: (id: string, files: FileList | null) => void;
   removeMedia: (id: string, mediaId: string) => void;
   hasPartner: (id: string) => boolean;

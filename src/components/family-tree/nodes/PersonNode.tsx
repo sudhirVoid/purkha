@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
-import type { FamilyNode, FamilyNodeData, Gender } from "../types";
+import type { FamilyNode, FamilyNodeData, Gender, ChildRelation } from "../types";
 import { genderIcon, genderStyles } from "../constants";
 import { useActions } from "../ActionsContext";
 import { Handles } from "./Handles";
@@ -131,6 +131,7 @@ export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   const fileRef = useRef<HTMLInputElement>(null);
   const spouses = actions.getSpouses(id);
   const parentBond = (data as any).parentBond;
+  const childRelation: ChildRelation = (data as any).childRelation || "biological";
   const loveColor = parentBond ? getLoveColor(parentBond) : null;
 
   const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +189,18 @@ export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
           )}
         </div>
       </div>
+
+      {/* Child relation badge */}
+      {childRelation !== "biological" && (
+        <div className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+          childRelation === "adopted" ? "bg-blue-100 text-blue-700 border border-blue-200" :
+          childRelation === "foster" ? "bg-green-100 text-green-700 border border-green-200" :
+          "bg-purple-100 text-purple-700 border border-purple-200"
+        }`}>
+          <span>{childRelation === "adopted" ? "🤝" : childRelation === "foster" ? "🏠" : "👣"}</span>
+          {childRelation}
+        </div>
+      )}
       
       {spouses.length > 1 && (
         <div className="mt-3 pt-2 border-t border-current/20 flex flex-col gap-1.5">
@@ -195,13 +208,17 @@ export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
           <div className="flex flex-wrap gap-1">
             {spouses.map(s => {
               const isActive = actions.getActiveSpouse(id) === s.bondId;
+              const bondNode = actions.getNode(s.bondId);
+              const bondStatus = bondNode?.data.bondStatus ?? "married";
+              const statusIcon = bondStatus === "divorced" ? "💔" : bondStatus === "separated" ? "⚡" : bondStatus === "widowed" ? "🕊️" : "";
               return (
                 <button
                   key={s.bondId}
                   onClick={(e) => { e.stopPropagation(); actions.setActiveSpouse(id, s.bondId); }}
-                  className={`px-2 py-0.5 text-[10px] rounded-full border transition-colors truncate max-w-[80px] ${isActive ? "bg-primary text-primary-foreground border-primary" : "bg-white/50 border-current/20 hover:bg-white/80"}`}
-                  title={s.spouseNode.data.label}
+                  className={`px-2 py-0.5 text-[10px] rounded-full border transition-colors truncate max-w-[100px] ${isActive ? "bg-primary text-primary-foreground border-primary" : "bg-white/50 border-current/20 hover:bg-white/80"}`}
+                  title={`${s.spouseNode.data.label} (${bondStatus})`}
                 >
+                  {statusIcon && <span className="mr-0.5">{statusIcon}</span>}
                   {s.spouseNode.data.label.split(" ")[0]}
                 </button>
               );

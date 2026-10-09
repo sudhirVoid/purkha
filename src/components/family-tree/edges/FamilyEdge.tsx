@@ -1,9 +1,23 @@
 import { BaseEdge, type EdgeProps } from "@xyflow/react";
+import { getLoveColor } from "../utils";
+import type { ChildRelation } from "../types";
+
+/** Dash patterns per child relation type (standard genogram conventions) */
+const RELATION_DASH: Record<ChildRelation, string | undefined> = {
+  biological: undefined,     // solid line
+  adopted: "8 4",            // dashed line  ----  ----
+  foster: "3 3",             // dotted line  ...
+  step: "12 4 3 4",          // dash-dot     ----·----·
+};
 
 /**
  * Custom edge component for clean family-tree connectors.
  * Draws orthogonal paths with at most one horizontal-vertical bend
  * and smooth rounded corners — no zigzag routing.
+ * 
+ * Supports:
+ * - Love-color matching (connector inherits bond node color)
+ * - Child relation dash patterns (adopted=dashed, foster=dotted, step=dash-dot)
  */
 export function FamilyEdge({
   sourceX,
@@ -14,6 +28,9 @@ export function FamilyEdge({
   style,
   markerEnd,
   markerStart,
+  source,
+  target,
+  data,
 }: EdgeProps) {
   const R = 12; // corner radius for rounded bends
   const dx = targetX - sourceX;
@@ -51,11 +68,27 @@ export function FamilyEdge({
     path = `M ${sourceX} ${sourceY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}`;
   }
 
+  // Determine the bond ID for color matching
+  const bondId = source.startsWith("bond-") ? source : target.startsWith("bond-") ? target : null;
+  const color = bondId ? getLoveColor(bondId) : null;
+
+  // Determine child relation for dash pattern
+  const childRelation = ((data as any)?.childRelation as ChildRelation) || "biological";
+  const dashArray = RELATION_DASH[childRelation];
+
+  const computedStyle = {
+    ...style,
+    stroke: color ? color.connector : (style?.stroke || "currentColor"),
+    strokeDasharray: dashArray,
+    // Make non-biological lines slightly thinner for subtlety
+    strokeWidth: childRelation !== "biological" ? 1.5 : (style?.strokeWidth || 2),
+  };
+
   return (
     <BaseEdge
       id={id}
       path={path}
-      style={style}
+      style={computedStyle}
       markerEnd={markerEnd}
       markerStart={markerStart}
     />

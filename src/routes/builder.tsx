@@ -24,17 +24,17 @@ export const Route = createFileRoute("/builder")({
       });
     });
 
-    if (!user) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
+    // if (!user) {
+    //   throw redirect({
+    //     to: "/login",
+    //     search: { redirect: location.href },
+    //   });
+    // }
   },
   head: () => ({
     meta: [
-      { title: "Family Relationship Builder" },
-      { name: "description", content: "Build two-generation family relationship diagrams visually with drag-and-drop nodes." },
+      { title: "Vamshavali Builder | PURKHA" },
+      { name: "description", content: "Build your family's vamshavali visually — ancestors, partners and descendants — with PURKHA, the league of Nepali people." },
     ],
   }),
   component: Builder,
@@ -78,8 +78,8 @@ function Builder() {
     <AppLayout>
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center h-full text-on-surface-variant font-body-lg">
-          <span className="material-symbols-outlined animate-spin mr-3">progress_activity</span>
-          Loading your lineage...
+          <span className="material-symbols-outlined animate-spin mr-3 text-sindoor">progress_activity</span>
+          Gathering your purkha…
         </div>
       ) : (
         <FamilyFlow 

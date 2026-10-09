@@ -101,17 +101,26 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     const placed = new Set<string>();
     sorted.forEach((personId) => {
       if (placed.has(personId)) return;
-      ordered.push(personId);
-      placed.add(personId);
+      
       const partnerBonds = bonds.filter((bondId) => (partnersOf.get(bondId) || []).includes(personId));
+      const spousesToPlace: string[] = [];
+      
       partnerBonds.forEach((bondId) => {
         (partnersOf.get(bondId) || []).forEach((otherPartnerId) => {
-          if (!placed.has(otherPartnerId) && level.get(otherPartnerId) === lvl) {
-            ordered.push(otherPartnerId);
-            placed.add(otherPartnerId);
+          if (!placed.has(otherPartnerId) && level.get(otherPartnerId) === lvl && otherPartnerId !== personId) {
+            spousesToPlace.push(otherPartnerId);
           }
         });
       });
+
+      // Center the shared person among their spouses
+      const half = Math.floor(spousesToPlace.length / 2);
+      const before = spousesToPlace.slice(0, half);
+      const after = spousesToPlace.slice(half);
+
+      before.forEach(sp => { ordered.push(sp); placed.add(sp); });
+      ordered.push(personId); placed.add(personId);
+      after.forEach(sp => { ordered.push(sp); placed.add(sp); });
     });
 
     const step = NODE_W + NODE_GAP;
@@ -207,7 +216,9 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
       const prev = band[i - 1];
       const curr = band[i];
       const prevW = kindOf.get(prev.id) === "bond" ? BOND_W : NODE_W;
-      const minGap = (prevW + NODE_W) / 2 + NODE_GAP;
+      const currW = kindOf.get(curr.id) === "bond" ? BOND_W : NODE_W;
+      // Increase minimum gap slightly to define clearer couple bounds
+      const minGap = (prevW + currW) / 2 + NODE_GAP * 1.5;
       const actualGap = curr.x - prev.x;
       if (actualGap < minGap) {
         const shift = minGap - actualGap;

@@ -12,7 +12,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { toPng } from "html-to-image";
 
-import type { FamilyNode, FamilyNodeData, Gender, Actions, MediaItem } from "./types";
+import type { FamilyNode, FamilyNodeData, Gender, Actions, MediaItem, BondStatus, ChildRelation } from "./types";
 import { ActionsContext } from "./ActionsContext";
 import { autoLayout } from "./auto-layout";
 import { reconcile } from "./reconcile";
@@ -22,6 +22,7 @@ import { mediaKindOf } from "./utils";
 import { PersonNodeView } from "./nodes/PersonNode";
 import { BondNodeView } from "./nodes/BondNode";
 import { FamilyEdge } from "./edges/FamilyEdge";
+import { TreeView } from "./tree-view/TreeView";
 import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 
@@ -39,6 +40,8 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
   const [flowName, setFlowName] = useState(treeName || "");
   const [isSavingFlow, setIsSavingFlow] = useState(false);
   const [currentTreeId, setCurrentTreeId] = useState<string | null>(treeId || null);
+  const [activeSpouses, setActiveSpouses] = useState<Record<string, string>>({});
+  const [viewMode, setViewMode] = useState<"graph" | "tree">("graph");
 
   useEffect(() => {
     if (propNodes && propEdges) {
@@ -106,10 +109,34 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
         directParents: queries.directParentsOf(id),
       }),
       getNode: (id) => nodes.find((node) => node.id === id),
+      setActiveSpouse: (personId, bondId) => setActiveSpouses((prev) => ({ ...prev, [personId]: bondId })),
+      getSpouses: (personId) => {
+        const bondIds = edges.filter((e) => e.source === personId && queries.kindOf.get(e.target) === "bond").map((e) => e.target);
+        return bondIds.map((bondId) => {
+          const spouseId = edges.find((e) => e.target === bondId && e.source !== personId)?.source;
+          return { bondId, spouseNode: spouseId ? nodes.find((n) => n.id === spouseId)! : undefined! };
+        }).filter((s) => s.spouseNode);
+      },
+      getActiveSpouse: (personId) => {
+        const spouses = edges.filter((e) => e.source === personId && queries.kindOf.get(e.target) === "bond").map((e) => e.target);
+        if (spouses.length === 0) return undefined;
+        return activeSpouses[personId] && spouses.includes(activeSpouses[personId]) ? activeSpouses[personId] : spouses[0];
+      },
       rename: (id, label) => patch(id, (nodeData) => ({ ...nodeData, label })),
       setGender: (id, gender) => patch(id, (nodeData) => ({ ...nodeData, gender })),
       setProfileImage: (id, url) => patch(id, (nodeData) => ({ ...nodeData, profileImage: url })),
       setMarriageDate: (id, marriageDate) => patch(id, (nodeData) => ({ ...nodeData, marriageDate })),
+      setDivorceDate: (id, divorceDate) => patch(id, (nodeData) => ({ ...nodeData, divorceDate })),
+      setBondStatus: (id, bondStatus) => patch(id, (nodeData) => ({ ...nodeData, bondStatus })),
+      setChildRelation: (edgeId, relation) => {
+        setEdges((currentEdges) => currentEdges.map((edge) =>
+          edge.id === edgeId ? { ...edge, data: { ...edge.data, childRelation: relation } } : edge
+        ));
+      },
+      getChildRelation: (edgeId) => {
+        const edge = edges.find((e) => e.id === edgeId);
+        return ((edge?.data as any)?.childRelation as ChildRelation) || "biological";
+      },
       addMedia: (id, files) => {
         if (!files) return;
         const items: MediaItem[] = Array.from(files).map((f) => ({
@@ -127,7 +154,7 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
           nodes: currentNodes.filter((node) => node.id !== id),
           edges: currentEdges.filter((edge) => edge.source !== id && edge.target !== id),
         })),
-      addChild: (fromId) => {
+      addChild: (fromId, relation) => {
         const from = nodes.find((node) => node.id === fromId);
         if (!from) return;
         const bondId = from.data.kind === "person" ? queries.partnerBondOf(fromId) : fromId;
@@ -137,12 +164,11 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
           childId,
           anchor.position.x + (Math.random() * 200 - 100),
           anchor.position.y + 200,
-          "Child",
+          relation && relation !== "biological" ? `${relation.charAt(0).toUpperCase() + relation.slice(1)} Child` : "Child",
         );
-        commit((currentNodes, currentEdges) => ({ nodes: [...currentNodes, child], edges: [...currentEdges, mkEdge(bondId ?? fromId, childId)] }));
+        commit((currentNodes, currentEdges) => ({ nodes: [...currentNodes, child], edges: [...currentEdges, mkEdge(bondId ?? fromId, childId, relation)] }));
       },
       addSpouse: (personId) => {
-        if (queries.partnerBondOf(personId)) return;
         const person = nodes.find((node) => node.id === personId)!;
         const spouseId = nextId();
         const bId = nextId();
@@ -338,7 +364,11 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
           )}
 
           {/* Utility buttons */}
-          <div className="floating-ui bg-surface-bright/90 rounded-full flex p-1 border border-outline-variant ml-4">
+          <div className="floating-ui bg-surface-bright/90 rounded-full flex p-1 border border-outline-variant ml-4 items-center">
+            <div className="flex border-r border-outline-variant pr-2 mr-2">
+              <button onClick={() => setViewMode("graph")} className={`px-3 py-1 text-xs rounded-full transition-colors font-label-sm uppercase ${viewMode === "graph" ? "bg-primary text-on-primary font-bold" : "hover:bg-surface-container-high"}`}>Graph</button>
+              <button onClick={() => setViewMode("tree")} className={`px-3 py-1 text-xs rounded-full transition-colors font-label-sm uppercase ${viewMode === "tree" ? "bg-primary text-on-primary font-bold" : "hover:bg-surface-container-high"}`}>Tree</button>
+            </div>
             <button onClick={runAutoLayout} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Auto Layout</button>
             <button onClick={loadNepalKings} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">King Of Nepal</button>
             <button onClick={exportImage} className="px-3 py-1 text-xs rounded-full hover:bg-surface-container-high transition-colors font-label-sm uppercase">Export Image</button>
@@ -372,6 +402,7 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
 
             const collapsedSet = new Set(collapsed);
             const seedIds: string[] = [];
+            // 1. Process explicit collapses
             collapsed.forEach(collapsedId => {
               const kind = kindOf.get(collapsedId);
               if (kind === "person") {
@@ -426,8 +457,82 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
               }
             }
 
-            const renderNodes = nodes.map(node => ({ ...node, hidden: hiddenNodeIds.has(node.id) }));
+            // 2. Active Spouse filtering
+            // We do a strictly downward and spouse-ward flood fill, BUT we prevent traversing back to the originating person.
+            personToBonds.forEach((bondIds, personId) => {
+              if (bondIds.length > 1) {
+                let activeBond = activeSpouses[personId];
+                if (!activeBond || !bondIds.includes(activeBond)) {
+                  activeBond = bondIds[0];
+                }
+                bondIds.forEach(bId => {
+                  if (bId !== activeBond) {
+                    const hideQueue = [bId];
+                    hiddenNodeIds.add(bId);
+                    
+                    (bondToPartners.get(bId) || []).forEach(partner => {
+                      if (partner !== personId) {
+                        hideQueue.push(partner);
+                        hiddenNodeIds.add(partner);
+                      }
+                    });
+
+                    while (hideQueue.length > 0) {
+                      const curr = hideQueue.shift()!;
+                      (adjacency.get(curr) || []).forEach(targetId => {
+                        if (!hiddenNodeIds.has(targetId)) {
+                          hiddenNodeIds.add(targetId);
+                          hideQueue.push(targetId);
+                        }
+                      });
+                      if (kindOf.get(curr) === "person") {
+                        (personToBonds.get(curr) || []).forEach(childBondId => {
+                          if (childBondId === activeBond) return; // Never traverse back up/across the active bond!
+                          if (!hiddenNodeIds.has(childBondId)) {
+                            hiddenNodeIds.add(childBondId);
+                            hideQueue.push(childBondId);
+                          }
+                          (bondToPartners.get(childBondId) || []).forEach(partner => {
+                            if (partner !== curr && partner !== personId && !hiddenNodeIds.has(partner)) {
+                              hiddenNodeIds.add(partner);
+                              hideQueue.push(partner);
+                            }
+                          });
+                        });
+                      }
+                    }
+                  }
+                });
+              }
+            });
+
+            const nodeToParentBond = new Map<string, string>();
+            const nodeToChildRelation = new Map<string, ChildRelation>();
+            edges.forEach(edge => {
+              if (kindOf.get(edge.source) === "bond" && kindOf.get(edge.target) === "person") {
+                nodeToParentBond.set(edge.target, edge.source);
+                nodeToChildRelation.set(edge.target, ((edge.data as any)?.childRelation as ChildRelation) || "biological");
+              }
+            });
+
+            const renderNodes = nodes.map(node => ({
+              ...node,
+              data: {
+                ...node.data,
+                parentBond: nodeToParentBond.get(node.id),
+                childRelation: nodeToChildRelation.get(node.id) || "biological",
+              },
+              hidden: hiddenNodeIds.has(node.id)
+            }));
             const renderEdges = edges.map(edge => ({ ...edge, hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target) }));
+
+            if (viewMode === "tree") {
+              return (
+                <div className="absolute inset-0 bg-surface">
+                  <TreeView nodes={renderNodes as any} edges={renderEdges as any} />
+                </div>
+              );
+            }
 
             return (
               <ReactFlow
@@ -442,6 +547,8 @@ export default function FamilyFlowInner({ initialNodes: propNodes, initialEdges:
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 fitView
+                panOnScroll={true}
+                zoomOnScroll={false}
                 deleteKeyCode={["Delete"]}
                 proOptions={{ hideAttribution: true }}
                 className="z-10"

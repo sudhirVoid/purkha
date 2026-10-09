@@ -21,16 +21,23 @@ export const initialEdges: Edge[] = [
 ];
 
 // ── Nepal Shah Dynasty (hardcoded demo) ───────────────────────────────
+// Demonstrates: multiple wives, divorce, widowing, adopted children
 export const nepalNodes: FamilyNode[] = [
-  // Generation 1: King Tribhuvan
+  // Generation 1: King Tribhuvan (Multiple Wives)
   personNode("tribhuvan", 0, 0, "King Tribhuvan", "male"),
   personNode("kanti", 300, 0, "Kanti Rajya Lakshmi", "female"),
   bondNode("bond-tk", 150, 100, "1919-02-27"),
+  personNode("ishwari", -300, 0, "Ishwari Rajya Lakshmi", "female"),
+  bondNode("bond-ti", -150, 100, "1919-02-27"), // Second wife
 
-  // Generation 2: King Mahendra + siblings
+  // Generation 2: King Mahendra + wives
   personNode("mahendra", 0, 250, "King Mahendra", "male"),
   personNode("indra", 300, 250, "Indra Rajya Lakshmi", "female"),
-  bondNode("bond-mi", 150, 350, "1940-05-01"),
+  // Indra died in 1950 → widowed
+  bondNode("bond-mi", 150, 350, "1940-05-01", "widowed"),
+  personNode("ratna", -300, 250, "Queen Ratna", "female"),
+  // Second marriage after Indra's death
+  bondNode("bond-mr", -150, 350, "1952-12-10"),
   personNode("himalaya", 600, 250, "Prince Himalaya", "male"),
 
   // Generation 3: King Birendra, Prince Gyanendra, and siblings
@@ -42,7 +49,10 @@ export const nepalNodes: FamilyNode[] = [
   personNode("komal", 900, 500, "Queen Komal", "female"),
   bondNode("bond-gk", 750, 600, "1970-05-01"),
 
+  // Prince Dhirendra — divorced from his wife
   personNode("dhirendra", 1100, 500, "Prince Dhirendra", "male"),
+  personNode("prekshya", 1400, 500, "Prekshya Rajya Lakshmi", "female"),
+  bondNode("bond-dp", 1250, 600, "1982-01-01", "divorced"),
 
   // Generation 4: Birendra's children
   personNode("dipendra", 0, 750, "Crown Prince Dipendra", "male"),
@@ -59,6 +69,9 @@ export const nepalNodes: FamilyNode[] = [
   bondNode("bond-ph", 800, 850, "2000-01-01"),
   personNode("prerana", 1100, 750, "Princess Prerana", "female"),
 
+  // An adopted child of Gyanendra & Komal (for demo)
+  personNode("anish", 1300, 750, "Anish (Adopted)", "male"),
+
   // Generation 5: Paras's children
   personNode("hridayendra", 650, 1000, "Prince Hridayendra", "male"),
   personNode("purnika", 850, 1000, "Princess Purnika", "female"),
@@ -70,17 +83,23 @@ export const nepalNodes: FamilyNode[] = [
 ];
 
 export const nepalEdges: Edge[] = [
-  // Gen 1 → Bond
+  // Gen 1 → Bond (First Wife)
   mkEdge("tribhuvan", "bond-tk"),
   mkEdge("kanti", "bond-tk"),
+  // Gen 1 → Bond (Second Wife)
+  mkEdge("tribhuvan", "bond-ti"),
+  mkEdge("ishwari", "bond-ti"),
 
   // Bond → Gen 2
   mkEdge("bond-tk", "mahendra"),
   mkEdge("bond-tk", "himalaya"),
 
-  // Gen 2 → Bond
+  // Gen 2 → Bond (First Wife — widowed)
   mkEdge("mahendra", "bond-mi"),
   mkEdge("indra", "bond-mi"),
+  // Gen 2 → Bond (Second Wife)
+  mkEdge("mahendra", "bond-mr"),
+  mkEdge("ratna", "bond-mr"),
 
   // Bond → Gen 3
   mkEdge("bond-mi", "birendra"),
@@ -92,6 +111,10 @@ export const nepalEdges: Edge[] = [
   mkEdge("aishwarya", "bond-ba"),
   mkEdge("gyanendra", "bond-gk"),
   mkEdge("komal", "bond-gk"),
+
+  // Dhirendra's divorced bond
+  mkEdge("dhirendra", "bond-dp"),
+  mkEdge("prekshya", "bond-dp"),
 
   // Bond → Gen 4 (Birendra's children)
   mkEdge("bond-ba", "dipendra"),
@@ -105,6 +128,9 @@ export const nepalEdges: Edge[] = [
   // Bond → Gen 4 (Gyanendra's children)
   mkEdge("bond-gk", "paras"),
   mkEdge("bond-gk", "prerana"),
+
+  // Adopted child of Gyanendra & Komal
+  mkEdge("bond-gk", "anish", "adopted"),
 
   // Paras + Himani bond
   mkEdge("paras", "bond-ph"),

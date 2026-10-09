@@ -6,7 +6,7 @@ export function PageLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col min-h-screen bg-surface">
       <NavBar />
-      <main className="flex-1 mt-[80px]">
+      <main className="flex-1 mt-[72px]">
         {children}
       </main>
       <Footer />

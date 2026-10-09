@@ -23,7 +23,7 @@ export const Route = createFileRoute("/settings")({
     }
   },
   head: () => ({
-    meta: [{ title: "Settings | Purkha Register" }],
+    meta: [{ title: "Settings | PURKHA" }],
   }),
   component: SettingsPage,
 });
@@ -65,11 +65,11 @@ function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="flex-1 overflow-y-auto p-8 max-w-2xl mx-auto w-full">
-        <h1 className="font-headline-md text-headline-md text-primary dark:text-primary-fixed mb-8">Settings</h1>
+      <div className="flex-1 overflow-y-auto p-8 max-w-2xl mx-auto w-full h-full">
+        <h1 className="font-headline-lg text-headline-lg text-himal mb-8">Settings</h1>
         
-        <div className="bg-surface-container rounded-2xl p-6 border border-outline-variant/30">
-          <h2 className="font-title-md text-title-md mb-4 text-on-surface">Profile Information</h2>
+        <div className="bg-surface-bright p-6 border border-lokta-border border-t-4 border-t-himal">
+          <h2 className="font-headline-md text-xl mb-4 text-himal">Profile Information</h2>
           <form onSubmit={handleSave} className="space-y-4">
             <div>
               <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2">Display Name</label>
@@ -96,7 +96,7 @@ function SettingsPage() {
               <button 
                 type="submit" 
                 disabled={isSaving}
-                className="font-label-sm text-label-sm bg-primary text-on-primary px-6 py-2 rounded-full hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="font-label-sm text-label-sm uppercase tracking-widest bg-sindoor-deep text-lokta-light px-6 py-2.5 hover:bg-himal disabled:opacity-50 transition-colors"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </button>

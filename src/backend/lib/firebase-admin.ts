@@ -1,11 +1,29 @@
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+export const adminAuth = {
+  async verifyIdToken(idToken: string) {
+    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+    if (!apiKey) {
+      throw new Error("VITE_FIREBASE_API_KEY is not configured");
+    }
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    projectId: 'purkha-auth-1a2b3c'
-  });
-}
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken })
+    });
 
-export const adminAuth = getAuth();
+    const data = await response.json();
+    
+    if (data.error || !data.users || data.users.length === 0) {
+      throw new Error(data.error?.message || "Invalid or expired authentication token");
+    }
+
+    const user = data.users[0];
+    return {
+      uid: user.localId,
+      email: user.email,
+      email_verified: user.emailVerified,
+      name: user.displayName,
+      ...user
+    };
+  }
+};

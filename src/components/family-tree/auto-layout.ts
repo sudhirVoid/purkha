@@ -14,15 +14,21 @@ export const BOND_DY = 82;  // Vertical offset of bond node below partner tops
 export const ROOT_GAP = 80; // Gap between distinct root trees
 
 /**
- * Robust hierarchical layout algorithm for family tree graphs.
+ * Hierarchical Subtree Bounding-Box Layout Algorithm.
  *
- * Guarantees:
- * 1. Children of couples appear strictly below their parents (Generation g + 1).
- * 2. Partners in a marriage share the exact same generation level.
- * 3. Bond nodes are mathematically centered between their partners.
- * 4. Children are centered directly beneath their parent bond node.
- * 5. Strict collision detection & sweep-line separation ensures ZERO overlapping
- *    between any nodes on any generation row.
+ * Core Architectural Principles:
+ * 1. Stack of Horizontal Rectangles (Generation Strata):
+ *    - Each generation g sits in a discrete horizontal band (rectangle) at y = g * LEVEL_H.
+ *    - All nodes of the same level (e.g. husband, wife, unmarried siblings) share that generation rectangle.
+ *    - Offspring extending from an upper node strictly drop into the next lower rectangle (g + 1).
+ *    - Marriage bonds sit in the vertical transition layer (y = g * LEVEL_H + BOND_DY).
+ *
+ * 2. Subtree Bounding-Box Invariant:
+ *    - The horizontal area allocated to a couple depends on all children lower than them:
+ *      W(unit) = max(W_couple, sum(W_children) + gaps).
+ *    - The couple is centered as a united block within [L, L + W(unit)].
+ *    - All children and their descendant subtrees are partitioned strictly inside [L, L + W(unit)].
+ *    - Children from one couple NEVER leave their parents' boundary or show on the other side.
  */
 export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   if (nodes.length === 0) return [];
@@ -54,142 +60,198 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   // ── 1. Generation Level Computation ─────────────────────────────────
   const level = computeGenerations(nodes, edges);
 
-  // Group persons by level
   const byLevel = new Map<number, string[]>();
   persons.forEach((pId) => {
     const lvl = level.get(pId) ?? 0;
     byLevel.set(lvl, [...(byLevel.get(lvl) || []), pId]);
   });
 
-  const positions = new Map<string, { x: number; y: number }>();
+  // ── 2. Build Discrete Family Unit Subtrees ──────────────────────────
+  type FamilyUnit = {
+    id: string; // anchor person id
+    members: string[]; // ordered person IDs (spouses and anchor)
+    bonds: string[]; // intermediate bonds between adjacent members
+    children: FamilyUnit[]; // recursive child units
+    lvl: number;
+  };
 
-  // ── 2. Identify Root Ancestors (level 0 or without parents in tree) ───
-  const hasParentsInTree = new Set<string>();
+  const assignedPersons = new Set<string>();
+  const assignedBonds = new Set<string>();
+
+  function buildUnit(personId: string): FamilyUnit {
+    assignedPersons.add(personId);
+    const myBonds = bondsOfPerson.get(personId) || [];
+    const spouses: string[] = [];
+    const unitBonds: string[] = [];
+
+    myBonds.forEach((bId) => {
+      assignedBonds.add(bId);
+      unitBonds.push(bId);
+      (partnersOf.get(bId) || []).forEach((partId) => {
+        if (partId !== personId && !spouses.includes(partId)) {
+          spouses.push(partId);
+          assignedPersons.add(partId);
+        }
+      });
+    });
+
+    // Symmetrical arrangement: place spouses evenly around the anchor person
+    const half = Math.floor(spouses.length / 2);
+    const members = [...spouses.slice(0, half), personId, ...spouses.slice(half)];
+
+    // Order intermediate bonds to sit between adjacent members
+    const orderedBonds: string[] = [];
+    for (let i = 0; i < members.length - 1; i++) {
+      const p1 = members[i];
+      const p2 = members[i + 1];
+      const matchBond = unitBonds.find((bId) => {
+        const parts = partnersOf.get(bId) || [];
+        return parts.includes(p1) && parts.includes(p2);
+      });
+      if (matchBond) {
+        orderedBonds.push(matchBond);
+      } else if (unitBonds[i]) {
+        orderedBonds.push(unitBonds[i]);
+      }
+    }
+
+    // Collect all children born from this unit's bonds and direct parent ties
+    const childIds: string[] = [];
+    // Prioritize bond order so children appear under their respective mother/father's side
+    orderedBonds.forEach((bId) => {
+      (childrenOfBond.get(bId) || []).forEach((k) => {
+        if (!childIds.includes(k)) childIds.push(k);
+      });
+    });
+    unitBonds.forEach((bId) => {
+      (childrenOfBond.get(bId) || []).forEach((k) => {
+        if (!childIds.includes(k)) childIds.push(k);
+      });
+    });
+    (directChildrenOf.get(personId) || []).forEach((k) => {
+      if (!childIds.includes(k)) childIds.push(k);
+    });
+
+    // Recursively build child units
+    const childrenUnits: FamilyUnit[] = [];
+    childIds.forEach((cId) => {
+      if (!assignedPersons.has(cId)) {
+        childrenUnits.push(buildUnit(cId));
+      }
+    });
+
+    return {
+      id: personId,
+      members,
+      bonds: orderedBonds,
+      children: childrenUnits,
+      lvl: level.get(personId) ?? 0,
+    };
+  }
+
+  // Identify root units (persons without parents in tree)
+  const roots: FamilyUnit[] = [];
   persons.forEach((pId) => {
-    if (parentBondOf.has(pId)) hasParentsInTree.add(pId);
-    if ((directChildrenOf.get(pId) || []).length > 0) {
-      (directChildrenOf.get(pId) || []).forEach((c) => hasParentsInTree.add(c));
+    const hasParentBond = parentBondOf.has(pId);
+    let hasDirectParent = false;
+    edges.forEach((e) => {
+      if (e.target === pId && kindOf.get(e.source) === "person") hasDirectParent = true;
+    });
+
+    if (!hasParentBond && !hasDirectParent && !assignedPersons.has(pId)) {
+      roots.push(buildUnit(pId));
     }
   });
 
-  // Helper: compute couple unit width and member order
-  // A unit around person P contains P, their spouses, and intermediate bonds
-  const getCoupleMembers = (pId: string): { members: string[]; width: number } => {
-    const myBonds = bondsOfPerson.get(pId) || [];
-    const spouses: string[] = [];
-    myBonds.forEach((bId) => {
-      (partnersOf.get(bId) || []).forEach((partId) => {
-        if (partId !== pId && !spouses.includes(partId)) spouses.push(partId);
-      });
-    });
+  // Catch any remaining unassigned persons
+  persons.forEach((pId) => {
+    if (!assignedPersons.has(pId)) {
+      roots.push(buildUnit(pId));
+    }
+  });
 
-    if (spouses.length === 0) {
-      return { members: [pId], width: NODE_W };
+  // ── 3. Bottom-Up Subtree Width Calculation ──────────────────────────
+  // The area covered by a couple depends strictly on all children lower than them
+  const unitWidthMap = new Map<string, number>();
+
+  function calculateUnitWidth(unit: FamilyUnit): number {
+    const coupleCardsW =
+      unit.members.length * NODE_W + unit.bonds.length * (BOND_PADDING * 2 + BOND_W);
+
+    if (unit.children.length === 0) {
+      unitWidthMap.set(unit.id, coupleCardsW);
+      return coupleCardsW;
     }
 
-    // Split spouses before and after the person for symmetrical multi-spouse trees
-    const half = Math.floor(spouses.length / 2);
-    const before = spouses.slice(0, half);
-    const after = spouses.slice(half);
+    const childWidths = unit.children.map(calculateUnitWidth);
+    const totalKidsW =
+      childWidths.reduce((sum, w) => sum + w, 0) + (unit.children.length - 1) * SIBLING_GAP;
 
-    const ordered = [...before, pId, ...after];
-    // Each person has NODE_W, each bond slot has (BOND_PADDING * 2 + BOND_W)
-    const totalW = ordered.length * NODE_W + myBonds.length * (BOND_PADDING * 2 + BOND_W);
-    return { members: ordered, width: totalW };
-  };
-
-  // Helper: compute total subtree width recursively
-  const memoSubtreeWidth = new Map<string, number>();
-  const getSubtreeWidth = (pId: string): number => {
-    if (memoSubtreeWidth.has(pId)) return memoSubtreeWidth.get(pId)!;
-
-    const coupleInfo = getCoupleMembers(pId);
-    let coupleW = coupleInfo.width;
-
-    // Collect all children of this person's bonds
-    const myBonds = bondsOfPerson.get(pId) || [];
-    const allKids: string[] = [];
-    myBonds.forEach((bId) => {
-      (childrenOfBond.get(bId) || []).forEach((k) => {
-        if (!allKids.includes(k)) allKids.push(k);
-      });
-    });
-    (directChildrenOf.get(pId) || []).forEach((k) => {
-      if (!allKids.includes(k)) allKids.push(k);
-    });
-
-    if (allKids.length === 0) {
-      memoSubtreeWidth.set(pId, coupleW);
-      return coupleW;
-    }
-
-    let kidsTotalW = 0;
-    allKids.forEach((kidId, idx) => {
-      const kidW = getSubtreeWidth(kidId);
-      kidsTotalW += kidW;
-      if (idx > 0) kidsTotalW += SIBLING_GAP;
-    });
-
-    const finalW = Math.max(coupleW, kidsTotalW);
-    memoSubtreeWidth.set(pId, finalW);
+    // Subtree boundary expands to cover all children lower than them
+    const finalW = Math.max(coupleCardsW, totalKidsW);
+    unitWidthMap.set(unit.id, finalW);
     return finalW;
-  };
+  }
 
-  // ── 3. Initial Top-Down Tree Positioning ────────────────────────────
-  // Place root level (Gen 0)
-  const sortedLevels = [...byLevel.keys()].sort((a, b) => a - b);
-  const rootPersons = (byLevel.get(0) || []).filter((pId) => !hasParentsInTree.has(pId));
-  const placedRoots = new Set<string>();
+  roots.forEach(calculateUnitWidth);
 
-  let rootCursorX = 0;
-  rootPersons.forEach((rootId) => {
-    if (placedRoots.has(rootId)) return;
+  // ── 4. Top-Down Recursive Bounding-Box Placement ────────────────────
+  const positions = new Map<string, { x: number; y: number }>();
 
-    const myBonds = bondsOfPerson.get(rootId) || [];
-    const spouses: string[] = [];
-    myBonds.forEach((bId) => {
-      (partnersOf.get(bId) || []).forEach((partId) => {
-        if (partId !== rootId && !spouses.includes(partId)) spouses.push(partId);
-      });
-    });
+  function placeUnit(unit: FamilyUnit, leftX: number, curLvl: number) {
+    const allocatedW = unitWidthMap.get(unit.id) ?? calculateUnitWidth(unit);
+    const center = leftX + allocatedW / 2;
+    const y = curLvl * LEVEL_H; // Horizontal rectangle row for this generation
 
-    const half = Math.floor(spouses.length / 2);
-    const orderedCouple = [...spouses.slice(0, half), rootId, ...spouses.slice(half)];
+    // Place the couple united as a block centered over the boundary
+    const coupleCardsW =
+      unit.members.length * NODE_W + unit.bonds.length * (BOND_PADDING * 2 + BOND_W);
+    const coupleStartX = Math.round(center - coupleCardsW / 2);
 
-    const subtreeW = getSubtreeWidth(rootId);
-    const coupleW = orderedCouple.length * NODE_W + Math.max(0, orderedCouple.length - 1) * (BOND_PADDING * 2 + BOND_W);
-    const coupleOffset = Math.max(0, Math.round((subtreeW - coupleW) / 2));
-
-    let curX = rootCursorX + coupleOffset;
-    orderedCouple.forEach((personId, idx) => {
-      placedRoots.add(personId);
-      positions.set(personId, { x: curX, y: 0 });
+    let curX = coupleStartX;
+    unit.members.forEach((mId, idx) => {
+      positions.set(mId, { x: curX, y });
       curX += NODE_W;
-      if (idx < orderedCouple.length - 1) {
-        // Space for marriage bond
+      if (idx < unit.bonds.length) {
+        const bId = unit.bonds[idx];
+        positions.set(bId, {
+          x: curX + BOND_PADDING,
+          y: y + BOND_DY,
+        });
         curX += BOND_PADDING * 2 + BOND_W;
       }
     });
 
-    const coupleTotalW = curX - (rootCursorX + coupleOffset);
-    rootCursorX += Math.max(coupleTotalW, subtreeW) + ROOT_GAP;
-  });
+    // Place all children inside [leftX, leftX + allocatedW] at row (curLvl + 1)
+    if (unit.children.length > 0) {
+      const childWidths = unit.children.map((c) => unitWidthMap.get(c.id)!);
+      const totalKidsW =
+        childWidths.reduce((sum, w) => sum + w, 0) + (unit.children.length - 1) * SIBLING_GAP;
 
-  // Handle any other level 0 persons not caught in roots
-  (byLevel.get(0) || []).forEach((pId) => {
-    if (!positions.has(pId)) {
-      positions.set(pId, { x: rootCursorX, y: 0 });
-      rootCursorX += NODE_W + SIBLING_GAP;
+      const childrenStartX = Math.round(center - totalKidsW / 2);
+      let childCursorX = childrenStartX;
+
+      unit.children.forEach((childUnit) => {
+        const childW = unitWidthMap.get(childUnit.id)!;
+        // Recursively layout child inside their strictly bounded sub-interval
+        placeUnit(childUnit, childCursorX, curLvl + 1);
+        childCursorX += childW + SIBLING_GAP;
+      });
     }
+  }
+
+  let rootCursorX = 60;
+  roots.forEach((rootUnit) => {
+    placeUnit(rootUnit, rootCursorX, rootUnit.lvl);
+    rootCursorX += unitWidthMap.get(rootUnit.id)! + ROOT_GAP;
   });
 
-  // ── 4. Position Bond Nodes Between Married Partners ─────────────────
+  // Re-center all bonds accurately between partners
   const updateBondPositions = () => {
     bonds.forEach((bondId) => {
       const parts = partnersOf.get(bondId) || [];
       const pts = parts.map((partId) => positions.get(partId)).filter(Boolean) as { x: number; y: number }[];
       if (pts.length >= 2) {
-        // Find left-most and right-most partner centers
         const centers = pts.map((pt) => pt.x + NODE_W / 2);
         const minCenter = Math.min(...centers);
         const maxCenter = Math.max(...centers);
@@ -201,7 +263,6 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
           y: maxY + BOND_DY,
         });
       } else if (pts.length === 1) {
-        // Single parent bond
         const pt = pts[0];
         positions.set(bondId, {
           x: Math.round(pt.x + NODE_W / 2 - BOND_W / 2),
@@ -213,104 +274,12 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
   updateBondPositions();
 
-  // ── 5. Position Children Beneath Parent Bonds ───────────────────────
-  // Process generations level by level from top to bottom
-  sortedLevels.forEach((lvl) => {
-    const parentBondsAtLevel = bonds.filter((bId) => {
-      const parts = partnersOf.get(bId) || [];
-      return parts.some((p) => (level.get(p) ?? 0) === lvl);
-    });
-
-    parentBondsAtLevel.forEach((bondId) => {
-      const kids = childrenOfBond.get(bondId) || [];
-      if (kids.length === 0) return;
-
-      const bondPos = positions.get(bondId);
-      if (!bondPos) return;
-
-      const bondCenter = bondPos.x + BOND_W / 2;
-
-      // Group each child with their spouse(s) into a unit
-      const childUnits = kids.map((kidId) => {
-        const myBonds = bondsOfPerson.get(kidId) || [];
-        const spouses: string[] = [];
-        myBonds.forEach((bId) => {
-          (partnersOf.get(bId) || []).forEach((spId) => {
-            if (spId !== kidId && !spouses.includes(spId) && (level.get(spId) ?? 0) === (level.get(kidId) ?? 0)) {
-              spouses.push(spId);
-            }
-          });
-        });
-
-        const half = Math.floor(spouses.length / 2);
-        const members = [...spouses.slice(0, half), kidId, ...spouses.slice(half)];
-        const unitWidth = members.length * NODE_W + myBonds.length * (BOND_PADDING * 2 + BOND_W);
-        const subtreeWidth = getSubtreeWidth(kidId);
-
-        return {
-          kidId,
-          members,
-          width: Math.max(unitWidth, subtreeWidth),
-          unitWidth,
-        };
-      });
-
-      // Total width of all children units including sibling gaps
-      const totalKidsWidth =
-        childUnits.reduce((sum, u) => sum + u.width, 0) + (childUnits.length - 1) * SIBLING_GAP;
-
-      let childCursorX = Math.round(bondCenter - totalKidsWidth / 2);
-
-      childUnits.forEach((unit) => {
-        const unitCenter = childCursorX + unit.width / 2;
-        let memberX = Math.round(unitCenter - unit.unitWidth / 2);
-
-        unit.members.forEach((memberId, mIdx) => {
-          const memberLvl = level.get(memberId) ?? lvl + 1;
-          positions.set(memberId, {
-            x: memberX,
-            y: memberLvl * LEVEL_H,
-          });
-          memberX += NODE_W;
-          if (mIdx < unit.members.length - 1) {
-            memberX += BOND_PADDING * 2 + BOND_W;
-          }
-        });
-
-        childCursorX += unit.width + SIBLING_GAP;
-      });
-    });
-
-    updateBondPositions();
-  });
-
-  // Handle any direct children (single parent without bond node)
-  directChildrenOf.forEach((kids, parentId) => {
-    const parentPos = positions.get(parentId);
-    if (!parentPos || kids.length === 0) return;
-    const parentCenter = parentPos.x + NODE_W / 2;
-    const totalW = kids.length * NODE_W + (kids.length - 1) * SIBLING_GAP;
-    let startX = Math.round(parentCenter - totalW / 2);
-
-    kids.forEach((kidId) => {
-      if (!positions.has(kidId)) {
-        const kidLvl = level.get(kidId) ?? (level.get(parentId) ?? 0) + 1;
-        positions.set(kidId, { x: startX, y: kidLvl * LEVEL_H });
-        startX += NODE_W + SIBLING_GAP;
-      }
-    });
-  });
-
-  updateBondPositions();
-
-  // ── 6. Strict Global Overlap Resolution (Sweep-Line Collision Guard) ──
-  // Process row by row. If any two adjacent person cards have less than
-  // SIBLING_GAP between them, push the right card (and its descendants) rightward!
+  // ── 5. Sweep-Line Safety Net (Row-by-Row Collision Guard) ───────────
+  const sortedLevels = [...byLevel.keys()].sort((a, b) => a - b);
   sortedLevels.forEach((lvl) => {
     const personsOnLevel = (byLevel.get(lvl) || []).filter((pId) => positions.has(pId));
     if (personsOnLevel.length < 2) return;
 
-    // Sort persons left-to-right
     personsOnLevel.sort((a, b) => (positions.get(a)?.x ?? 0) - (positions.get(b)?.x ?? 0));
 
     for (let i = 1; i < personsOnLevel.length; i++) {
@@ -319,7 +288,6 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
       const prevX = positions.get(prevId)!.x;
       const currX = positions.get(currId)!.x;
 
-      // Are they partners in the same bond?
       const sharedBond = (bondsOfPerson.get(prevId) || []).find((bId) =>
         (partnersOf.get(bId) || []).includes(currId),
       );
@@ -329,14 +297,11 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
       if (currX < minRequiredX) {
         const shift = minRequiredX - currX;
-
-        // Shift currId and all subsequent persons on this level
         for (let j = i; j < personsOnLevel.length; j++) {
           const shiftId = personsOnLevel[j];
           const curPos = positions.get(shiftId)!;
           positions.set(shiftId, { x: curPos.x + shift, y: curPos.y });
 
-          // Also shift their downstream descendants so parent-child vertical ties stay straight
           const shiftDescendants = (rootP: string) => {
             const myBonds = bondsOfPerson.get(rootP) || [];
             myBonds.forEach((bId) => {
@@ -370,10 +335,9 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     }
   });
 
-  // Re-center all bonds after collision shifts
   updateBondPositions();
 
-  // ── 7. Normalize Coordinates (Comfortable Canvas Margin) ────────────
+  // ── 6. Normalize Coordinates to Comfortable Margins ─────────────────
   const allPos = [...positions.values()];
   const minX = allPos.length ? Math.min(...allPos.map((p) => p.x)) : 0;
   const minY = allPos.length ? Math.min(...allPos.map((p) => p.y)) : 0;
@@ -388,7 +352,6 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
       const p = positions.get(node.id)!;
       positions.set(node.id, { x: p.x + deltaX, y: p.y + deltaY });
     } else {
-      // Orphan fallback
       positions.set(node.id, { x: targetMarginX, y: targetMarginY });
     }
   });

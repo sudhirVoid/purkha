@@ -158,4 +158,24 @@ Shapes are primarily **Soft and Rectilinear**.
 - **Lists:** Separated by thin 1px horizontal lines with a small "knot" icon at the intersection, resembling the tie-points of prayer flags.
 - **Input Fields:** Bottom-bordered only by default, using Slate Dusk. On focus, the border thickens and changes to Terracotta Wood.
 - **Cards:** Background color is the "Light Lokta" tint. Cards should feature the Newari lattice motif as a subtle header or footer decoration.
-- **Ancestry Node:** A specific card component with a Dhaka Maroon left-accent border and Literata headline text.
+- **Ancestry Node (Person Card):** 
+  - Features an organic border tinted by the generation's mineral palette.
+  - Profile avatar with subtle corner clips and hover-to-upload prompt.
+  - Multi-spouse pill switcher rendered cleanly below the name when multiple marriages exist.
+  - Bottom baseline equalization: Spouses in a couple are equalized to the same `minHeight` so they share an identical bottom edge.
+- **Bond Node (Marriage Pill):**
+  - Elegant pill badge centered between spouses, placed strictly 36px below the couple's equalized bottom baseline.
+  - Displays interlocking wedding rings, marriage date chip, and children count badge.
+  - Uses gold/rose border styling to signify union without competing with person cards.
+
+## Generation & Lineage System
+To celebrate ancestral chronology, generations are differentiated using cyclical Himalayan mineral tones (`toneFor`) and Devanagari numerals:
+1. **Gold Ochre (सुनौलो माटो):** Primordial / Patriarchal root (`#D4AF37`)
+2. **Dhaka Crimson (ढाका रातो):** Vitality and lineage pride (`#A32A2A`)
+3. **Himal Slate (हिमाल कालो):** Mountain endurance (`#3E5060`)
+4. **Pine Forest (सल्लो हरियो):** Growth and generational branch (`#2E6B4F`)
+5. **Terracotta Clay (पाटन माटो):** Craft and earthen rootedness (`#B25329`)
+6. **Royal Lapis (नीलो मखमली):** Wisdom and archival memory (`#2B4C7E`)
+7. **Amethyst Dusk (साँझ बैजनी):** Reverence and transcendental heritage (`#6E3D78`)
+
+Each generation badge displays the Devanagari numeral (e.g. `पुस्ता १`, `पुस्ता २`...) alongside English generation depth, reinforcing cultural authenticity and visual order.

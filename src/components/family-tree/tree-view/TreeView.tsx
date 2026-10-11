@@ -19,8 +19,10 @@ type TreeContext = {
 
 export function TreeView({ nodes, edges }: TreeViewProps) {
   const { roots, context } = useMemo(() => {
-    const kindOf = new Map(nodes.map((n) => [n.id, n.data.kind]));
-    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const visibleNodes = nodes.filter((n) => !n.hidden);
+    const visibleEdges = edges.filter((e) => !e.hidden);
+    const kindOf = new Map(visibleNodes.map((n) => [n.id, n.data.kind]));
+    const nodeMap = new Map(visibleNodes.map((n) => [n.id, n]));
 
     const personToBonds = new Map<string, string[]>();
     const bondToPartners = new Map<string, string[]>();
@@ -28,7 +30,7 @@ export function TreeView({ nodes, edges }: TreeViewProps) {
     const hasParents = new Set<string>();
     const marriedToSomeoneWithParents = new Set<string>();
 
-    edges.forEach((edge) => {
+    visibleEdges.forEach((edge) => {
       if (kindOf.get(edge.source) === "person" && kindOf.get(edge.target) === "bond") {
         personToBonds.set(edge.source, [...(personToBonds.get(edge.source) || []), edge.target]);
         bondToPartners.set(edge.target, [...(bondToPartners.get(edge.target) || []), edge.source]);
@@ -39,7 +41,7 @@ export function TreeView({ nodes, edges }: TreeViewProps) {
       }
     });
 
-    edges.forEach((edge) => {
+    visibleEdges.forEach((edge) => {
       if (kindOf.get(edge.source) === "person" && kindOf.get(edge.target) === "bond") {
         const partners = bondToPartners.get(edge.target) || [];
         const anyPartnerHasParents = partners.some((p) => hasParents.has(p));
@@ -49,7 +51,7 @@ export function TreeView({ nodes, edges }: TreeViewProps) {
       }
     });
 
-    const potentialRoots = nodes.filter(
+    const potentialRoots = visibleNodes.filter(
       (n) => n.data.kind === "person" && !hasParents.has(n.id) && !marriedToSomeoneWithParents.has(n.id)
     );
     const finalRoots: FamilyNode[] = [];

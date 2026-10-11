@@ -629,63 +629,87 @@ export default function FamilyFlowInner({
                 }
               });
 
-              // ── Collapsible Descendant Filtering ──────────────────────────
-              const hiddenNodeIds = new Set<string>();
-              const collapsed = nodes.filter((node) => node.data.isCollapsed).map((node) => node.id);
-
-              const seedIds: string[] = [];
-              collapsed.forEach((collapsedId) => {
-                const kind = kindOf.get(collapsedId);
-                if (kind === "person") {
-                  // Only hide children descending from this person! Spouses and bonds remain visible!
-                  const myBonds = personToBonds.get(collapsedId) || [];
-                  myBonds.forEach((bondId) => {
-                    (adjacency.get(bondId) || []).forEach((childId) => {
-                      seedIds.push(childId);
-                    });
-                  });
-                  (adjacency.get(collapsedId) || []).forEach((targetId) => {
-                    if (kindOf.get(targetId) === "person") {
-                      seedIds.push(targetId);
-                    }
-                  });
-                } else if (kind === "bond") {
-                  // Hide children of this bond. Both married partners remain visible!
-                  (adjacency.get(collapsedId) || []).forEach((childId) => {
-                    seedIds.push(childId);
-                  });
+              const nodeToParentBond = new Map<string, string>();
+              const nodeToChildRelation = new Map<string, ChildRelation>();
+              const childrenOfBond = new Map<string, string[]>();
+              edges.forEach((edge) => {
+                if (kindOf.get(edge.source) === "bond" && kindOf.get(edge.target) === "person") {
+                  nodeToParentBond.set(edge.target, edge.source);
+                  childrenOfBond.set(edge.source, [...(childrenOfBond.get(edge.source) || []), edge.target]);
+                  nodeToChildRelation.set(
+                    edge.target,
+                    ((edge.data as any)?.childRelation as ChildRelation) || "biological",
+                  );
                 }
               });
 
-              seedIds.forEach((id) => hiddenNodeIds.add(id));
+              // ── Descendant & Inactive Spouse Filtering ─────────────────────
+              const hiddenNodeIds = new Set<string>();
 
-              // Queue to recursively hide children's downstream subtrees
-              const queue = [...seedIds];
-              while (queue.length > 0) {
-                const curr = queue.shift()!;
-                (adjacency.get(curr) || []).forEach((targetId) => {
-                  if (!hiddenNodeIds.has(targetId)) {
-                    hiddenNodeIds.add(targetId);
-                    queue.push(targetId);
+              // Recursively hide a person node and all their downstream descendants
+              const hidePersonAndDescendants = (personId: string) => {
+                if (hiddenNodeIds.has(personId)) return;
+                hiddenNodeIds.add(personId);
+
+                // Hide all marriage bonds of this person and their children
+                const myBonds = personToBonds.get(personId) || [];
+                myBonds.forEach((bondId) => {
+                  hideBondAndDescendants(bondId, personId);
+                });
+
+                // Hide any direct children (person-to-person edges)
+                (adjacency.get(personId) || []).forEach((targetId) => {
+                  if (kindOf.get(targetId) === "person") {
+                    hidePersonAndDescendants(targetId);
                   }
                 });
-                if (kindOf.get(curr) === "person") {
-                  (personToBonds.get(curr) || []).forEach((bondId) => {
-                    if (!hiddenNodeIds.has(bondId)) {
-                      hiddenNodeIds.add(bondId);
-                      queue.push(bondId);
-                    }
-                    (bondToPartners.get(bondId) || []).forEach((partner) => {
-                      if (partner !== curr && !hiddenNodeIds.has(partner)) {
-                        hiddenNodeIds.add(partner);
-                        queue.push(partner);
-                      }
-                    });
-                  });
-                }
-              }
+              };
 
-              // Active spouse filtering (for poly-marriage view)
+              // Recursively hide a bond, its spouses (other than anchor person), and all its children
+              const hideBondAndDescendants = (bondId: string, anchorPersonId?: string) => {
+                hiddenNodeIds.add(bondId);
+
+                // Hide the spouse(s) attached to this bond (except the anchor person)
+                const partners = bondToPartners.get(bondId) || [];
+                partners.forEach((pId) => {
+                  if (pId !== anchorPersonId) {
+                    hiddenNodeIds.add(pId);
+                  }
+                });
+
+                // Hide all children born from this bond and their entire downward lineage
+                const kids = childrenOfBond.get(bondId) || [];
+                kids.forEach((kId) => {
+                  hidePersonAndDescendants(kId);
+                });
+              };
+
+              // 1. Collapsible Descendant Filtering
+              const collapsed = nodes.filter((node) => node.data.isCollapsed).map((node) => node.id);
+              collapsed.forEach((collapsedId) => {
+                const kind = kindOf.get(collapsedId);
+                if (kind === "person") {
+                  // Hide children of this person (both married partners remain visible)
+                  const myBonds = personToBonds.get(collapsedId) || [];
+                  myBonds.forEach((bondId) => {
+                    const kids = childrenOfBond.get(bondId) || [];
+                    kids.forEach((kId) => hidePersonAndDescendants(kId));
+                  });
+                  (adjacency.get(collapsedId) || []).forEach((targetId) => {
+                    if (kindOf.get(targetId) === "person") {
+                      hidePersonAndDescendants(targetId);
+                    }
+                  });
+                } else if (kind === "bond") {
+                  // Hide children of this bond (both married partners remain visible)
+                  const kids = childrenOfBond.get(collapsedId) || [];
+                  kids.forEach((kId) => hidePersonAndDescendants(kId));
+                }
+              });
+
+              // 2. Active Spouse Filtering (for poly-marriage view)
+              // When one spouse of a multi-marriage is selected, all OTHER inactive
+              // spouses and their entire downstream descendant subtrees are completely hidden.
               personToBonds.forEach((bondIds, personId) => {
                 if (bondIds.length > 1) {
                   let activeBond = activeSpouses[personId];
@@ -694,31 +718,28 @@ export default function FamilyFlowInner({
                   }
                   bondIds.forEach((bId) => {
                     if (bId !== activeBond) {
-                      hiddenNodeIds.add(bId);
-                      (bondToPartners.get(bId) || []).forEach((partner) => {
-                        if (partner !== personId) {
-                          hiddenNodeIds.add(partner);
-                        }
-                      });
-                      (adjacency.get(bId) || []).forEach((kidId) => {
-                        hiddenNodeIds.add(kidId);
-                      });
+                      hideBondAndDescendants(bId, personId);
                     }
                   });
                 }
               });
 
-              const nodeToParentBond = new Map<string, string>();
-              const nodeToChildRelation = new Map<string, ChildRelation>();
-              edges.forEach((edge) => {
-                if (kindOf.get(edge.source) === "bond" && kindOf.get(edge.target) === "person") {
-                  nodeToParentBond.set(edge.target, edge.source);
-                  nodeToChildRelation.set(
-                    edge.target,
-                    ((edge.data as any)?.childRelation as ChildRelation) || "biological",
-                  );
-                }
-              });
+              // 3. Disconnection Guard (Parent Visibility Invariant)
+              // Guarantee ZERO orphaned or disconnected nodes in any tree:
+              // If a person's parent bond is hidden, that person and all their descendants must be hidden.
+              let changed = true;
+              while (changed) {
+                changed = false;
+                nodes.forEach((node) => {
+                  if (node.data.kind === "person" && !hiddenNodeIds.has(node.id)) {
+                    const pBond = nodeToParentBond.get(node.id);
+                    if (pBond && hiddenNodeIds.has(pBond)) {
+                      hidePersonAndDescendants(node.id);
+                      changed = true;
+                    }
+                  }
+                });
+              }
 
               const renderNodes = nodes.map((node) => ({
                 ...node,
@@ -754,7 +775,32 @@ export default function FamilyFlowInner({
                     onEdgesChange(changes);
                     queueMicrotask(() => setEdges((currentEdges) => reconcile(nodes, currentEdges)));
                   }}
-                  onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+                  onNodeClick={(_, node) => {
+                    setSelectedNodeId(node.id);
+                    // Auto-align active spouse when clicking a partner or marriage bond
+                    if (node.data.kind === "person") {
+                      const myBonds = personToBonds.get(node.id) || [];
+                      myBonds.forEach((bId) => {
+                        const partners = bondToPartners.get(bId) || [];
+                        partners.forEach((partnerId) => {
+                          if (partnerId !== node.id) {
+                            const partnerBonds = personToBonds.get(partnerId) || [];
+                            if (partnerBonds.length > 1) {
+                              setActiveSpouses((prev) => ({ ...prev, [partnerId]: bId }));
+                            }
+                          }
+                        });
+                      });
+                    } else if (node.data.kind === "bond") {
+                      const partners = bondToPartners.get(node.id) || [];
+                      partners.forEach((partnerId) => {
+                        const partnerBonds = personToBonds.get(partnerId) || [];
+                        if (partnerBonds.length > 1) {
+                          setActiveSpouses((prev) => ({ ...prev, [partnerId]: node.id }));
+                        }
+                      });
+                    }
+                  }}
                   onPaneClick={() => setSelectedNodeId(null)}
                   onConnect={onConnect}
                   nodeTypes={nodeTypes}

@@ -1,8 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import FamilyFlow from "@/components/family-tree";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { getCurrentUser, useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,19 +16,14 @@ export const Route = createFileRoute("/builder")({
     };
   },
   beforeLoad: async ({ location }) => {
-    const user = await new Promise((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        unsubscribe();
-        resolve(user);
-      });
-    });
+    const currentUser = await getCurrentUser();
 
-    // if (!user) {
-    //   throw redirect({
-    //     to: "/login",
-    //     search: { redirect: location.href },
-    //   });
-    // }
+    if (!currentUser) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
   },
   head: () => ({
     meta: [
@@ -42,37 +36,40 @@ export const Route = createFileRoute("/builder")({
 
 function Builder() {
   const { treeId } = Route.useSearch();
+  const { user } = useAuth();
   const [treeData, setTreeData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(!!treeId);
 
   useEffect(() => {
     async function loadTree() {
-      if (!treeId || !auth.currentUser) {
+      if (!treeId || !user) {
         setIsLoading(false);
         return;
       }
       
       try {
-        const token = await auth.currentUser.getIdToken();
-        const res = await fetch(`/api/trees?id=${treeId}`, {
+        const token = await user.getIdToken();
+        const response = await fetch(`/api/trees?id=${treeId}`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }
         });
         
-        if (!res.ok) throw new Error("Failed to load tree");
-        const data = await res.json();
-        setTreeData(data);
-      } catch (err: any) {
+        if (!response.ok) {
+          throw new Error("Failed to load tree");
+        }
+        const parsedData = await response.json();
+        setTreeData(parsedData);
+      } catch (loadError: unknown) {
         toast.error("Could not load the requested family tree");
-        console.error(err);
+        console.error(loadError);
       } finally {
         setIsLoading(false);
       }
     }
     
     loadTree();
-  }, [treeId]);
+  }, [treeId, user]);
 
   return (
     <AppLayout>

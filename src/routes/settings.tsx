@@ -1,21 +1,14 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { onAuthStateChanged, updateProfile } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+import { getCurrentUser, useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: async ({ location }) => {
-    const user = await new Promise((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        unsubscribe();
-        resolve(user);
-      });
-    });
+    const currentUser = await getCurrentUser();
 
-    if (!user) {
+    if (!currentUser) {
       throw redirect({
         to: "/login",
         search: { redirect: location.href },
@@ -29,35 +22,21 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!auth.currentUser) return;
+  const handleSave = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!user) return;
     setIsSaving(true);
     
     try {
-      // 1. Update Firebase Profile
-      await updateProfile(auth.currentUser, { displayName });
-      
-      // 2. Sync to Backend
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/auth/profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ username: displayName })
-      });
-      
-      if (!res.ok) throw new Error("Failed to sync profile to database");
-      
+      await updateUserProfile(displayName);
       toast.success("Profile updated successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update profile");
+    } catch (updateError: unknown) {
+      const errorMessage = updateError instanceof Error ? updateError.message : "Failed to update profile";
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -76,7 +55,7 @@ function SettingsPage() {
               <input 
                 type="text" 
                 value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                onChange={(changeEvent) => setDisplayName(changeEvent.target.value)}
                 className="w-full bg-surface-container-highest border border-outline py-2 px-4 rounded-lg focus:outline-none focus:border-primary transition-colors text-on-surface"
                 placeholder="Enter your name"
               />

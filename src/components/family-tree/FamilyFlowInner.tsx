@@ -40,7 +40,7 @@ import { FamilyEdge } from "./edges/FamilyEdge";
 import { TreeView } from "./tree-view/TreeView";
 import { BuilderSidebar } from "./BuilderSidebar";
 import { computeGenerations, toneFor, generationLabel } from "./generations";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const nodeTypes = { family: PersonNodeView, bond: BondNodeView };
@@ -52,6 +52,7 @@ export default function FamilyFlowInner({
   treeId,
   treeName,
 }: any) {
+  const { user } = useAuth();
   const [nodes, setNodes, onNodesChange] = useNodesState<FamilyNode>(propNodes || initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(propEdges || initialEdges);
   const wrapper = useRef<HTMLDivElement>(null);
@@ -426,7 +427,7 @@ export default function FamilyFlowInner({
   );
 
   const saveFlowToCloud = async () => {
-    if (!auth.currentUser) {
+    if (!user) {
       toast.error("You must be logged in to save.");
       return;
     }
@@ -437,14 +438,14 @@ export default function FamilyFlowInner({
 
     setIsSavingFlow(true);
     try {
-      const token = await auth.currentUser.getIdToken();
+      const token = await user.getIdToken();
       const payload = {
         id: currentTreeId,
         name: flowName.trim(),
         data: { nodes, edges },
       };
 
-      const res = await fetch("/api/trees", {
+      const response = await fetch("/api/trees", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -453,20 +454,23 @@ export default function FamilyFlowInner({
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save flow");
-      const data = await res.json();
-      setCurrentTreeId(data.id);
+      if (!response.ok) {
+        throw new Error("Failed to save flow");
+      }
+      const responseData = await response.json();
+      setCurrentTreeId(responseData.id);
       setIsSaveModalOpen(false);
       toast.success("Vamshavali saved to PURKHA cloud!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save flow");
+    } catch (saveError: unknown) {
+      const errorMessage = saveError instanceof Error ? saveError.message : "Failed to save flow";
+      toast.error(errorMessage);
     } finally {
       setIsSavingFlow(false);
     }
   };
 
   const selectedNode = useMemo(
-    () => (selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) ?? null : null),
+    () => (selectedNodeId ? nodes.find((targetNode) => targetNode.id === selectedNodeId) ?? null : null),
     [nodes, selectedNodeId],
   );
 

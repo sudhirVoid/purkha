@@ -1,22 +1,15 @@
 import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { useAuth } from "@/hooks/useAuth";
+import { getCurrentUser, useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PurkhaMark } from "@/components/brand/PurkhaLogo";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: async ({ location }) => {
-    const user = await new Promise((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        unsubscribe();
-        resolve(user);
-      });
-    });
+    const currentUser = await getCurrentUser();
 
-    if (!user) {
+    if (!currentUser) {
       throw redirect({
         to: "/login",
         search: { redirect: location.href },
@@ -43,19 +36,22 @@ function DashboardPage() {
 
   useEffect(() => {
     async function fetchTrees() {
-      if (!auth.currentUser) return;
+      if (!user) return;
       try {
-        const token = await auth.currentUser.getIdToken();
-        const res = await fetch("/api/trees", {
+        const token = await user.getIdToken();
+        const response = await fetch("/api/trees", {
           headers: {
-            "Authorization": `Bearer ${token}`
-          }
+            "Authorization": `Bearer ${token}`,
+          },
         });
-        if (!res.ok) throw new Error("Failed to load family trees");
-        const data = await res.json();
-        setTrees(data);
-      } catch (error: any) {
-        toast.error(error.message);
+        if (!response.ok) {
+          throw new Error("Failed to load family trees");
+        }
+        const parsedData = await response.json();
+        setTrees(parsedData);
+      } catch (fetchError: unknown) {
+        const errorMessage = fetchError instanceof Error ? fetchError.message : "Failed to load trees";
+        toast.error(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -95,16 +91,16 @@ function DashboardPage() {
               <Link to="/builder" className="mt-6 font-label-sm text-label-sm uppercase tracking-widest text-sindoor hover:text-himal underline-offset-4 hover:underline">Plant your first root</Link>
             </div>
           ) : (
-            trees.map(tree => (
-              <div key={tree.id} className="brand-card bg-surface-bright p-6 border border-lokta-border border-t-4 border-t-sindoor-deep group relative">
+            trees.map((familyTree) => (
+              <div key={familyTree.id} className="brand-card bg-surface-bright p-6 border border-lokta-border border-t-4 border-t-sindoor-deep group relative">
                 <span className="material-symbols-outlined absolute top-5 right-5 text-sayapatri">account_tree</span>
-                <h3 className="font-headline-md text-xl text-himal mb-2 pr-8">{tree.name}</h3>
+                <h3 className="font-headline-md text-xl text-himal mb-2 pr-8">{familyTree.name}</h3>
                 <p className="font-label-xs text-label-xs uppercase tracking-wider text-on-surface-variant mb-6">
-                  Last tended {new Date(tree.updatedAt).toLocaleDateString()}
+                  Last tended {new Date(familyTree.updatedAt).toLocaleDateString()}
                 </p>
                 <Link 
                   to="/builder"
-                  search={{ treeId: tree.id }}
+                  search={{ treeId: familyTree.id }}
                   className="font-label-sm text-label-sm uppercase tracking-wider text-himal group-hover:text-sindoor flex items-center space-x-1"
                 >
                   <span>Open Vamshavali</span>

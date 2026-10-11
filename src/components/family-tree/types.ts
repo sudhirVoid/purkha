@@ -23,6 +23,9 @@ export type FamilyNodeData = {
   residingAt?: string;
   profileImage?: string;
   isCollapsed?: boolean;
+  generation?: number;
+  childrenCount?: number;
+  partnerBond?: string;
 };
 
 export type FamilyNode = Node<FamilyNodeData>;

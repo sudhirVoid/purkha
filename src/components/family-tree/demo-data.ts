@@ -6,7 +6,7 @@ import { personNode, bondNode, mkEdge } from "./factories";
 export const initialNodes: FamilyNode[] = [
   personNode("husband", 40, 40, "Husband", "male"),
   personNode("wife", 460, 40, "Wife", "female"),
-  bondNode("love", 270, 200, "2005-06-12"),
+  bondNode("love", 270, 200, "2005-06-12", "married", true),
   personNode("c1", 60, 380, "Child 1", "male"),
   personNode("c2", 260, 380, "Child 2", "female"),
   personNode("c3", 460, 380, "Child 3", "other"),
@@ -26,7 +26,7 @@ export const nepalNodes: FamilyNode[] = [
   // Generation 1: King Tribhuvan (Multiple Wives)
   personNode("tribhuvan", 0, 0, "King Tribhuvan", "male"),
   personNode("kanti", 300, 0, "Kanti Rajya Lakshmi", "female"),
-  bondNode("bond-tk", 150, 100, "1919-02-27"),
+  bondNode("bond-tk", 150, 100, "1919-02-27", "married", true),
   personNode("ishwari", -300, 0, "Ishwari Rajya Lakshmi", "female"),
   bondNode("bond-ti", -150, 100, "1919-02-27"), // Second wife
 

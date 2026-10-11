@@ -14,18 +14,18 @@ export function formatDate(dateString?: string) {
 }
 
 export const LOVE_COLORS = [
-  // 1. Classic Rose
-  { grad1: "hsl(345 90% 62%)", grad2: "hsl(325 75% 45%)", stroke: "hsl(345 60% 35%)", connector: "#e11d48" },
-  // 2. Vibrant Pink
-  { grad1: "hsl(330 90% 65%)", grad2: "hsl(310 80% 50%)", stroke: "hsl(330 60% 40%)", connector: "#db2777" },
-  // 3. Bright Red
-  { grad1: "hsl(0 85% 65%)", grad2: "hsl(350 75% 45%)", stroke: "hsl(0 60% 35%)", connector: "#dc2626" },
-  // 4. Fuchsia
-  { grad1: "hsl(290 85% 65%)", grad2: "hsl(270 75% 45%)", stroke: "hsl(290 60% 35%)", connector: "#c026d3" },
-  // 5. Violet
-  { grad1: "hsl(260 85% 65%)", grad2: "hsl(240 75% 50%)", stroke: "hsl(260 60% 40%)", connector: "#7c3aed" },
-  // 6. Orange/Peach
-  { grad1: "hsl(15 90% 65%)", grad2: "hsl(5 80% 50%)", stroke: "hsl(15 60% 40%)", connector: "#ea580c" },
+  // 1. Sindoor Crimson (विवाह रङ्ग)
+  { grad1: "#B3173A", grad2: "#8E1230", stroke: "#5E0B1F", connector: "#B3173A" },
+  // 2. Sayapatri Gold (फूलमाला रङ्ग)
+  { grad1: "#E8A317", grad2: "#C68200", stroke: "#7A4E00", connector: "#D48F0B" },
+  // 3. Himal Dusk Blue (हिमाली सन्ध्या)
+  { grad1: "#2A4A94", grad2: "#14295C", stroke: "#0B1A3D", connector: "#14295C" },
+  // 4. Terracotta Clay (माटो रङ्ग)
+  { grad1: "#D96B27", grad2: "#B4531A", stroke: "#6E2D07", connector: "#B4531A" },
+  // 5. Rara Teal (रारा ताल)
+  { grad1: "#2DA493", grad2: "#1F7A6D", stroke: "#10473F", connector: "#1F7A6D" },
+  // 6. Jamuni Royal (बैजनी)
+  { grad1: "#7E52BC", grad2: "#5B3A8C", stroke: "#341E55", connector: "#5B3A8C" },
 ];
 
 export function getLoveColor(id: string) {

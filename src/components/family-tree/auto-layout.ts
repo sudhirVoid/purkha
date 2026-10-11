@@ -4,24 +4,70 @@ import { computeGenerations } from "./generations";
 
 // ── Sizing & Spacing Constants ──────────────────────────────────────────
 export const NODE_W = 260; // Fixed width of PersonNode card
-export const NODE_H = 112; // Typical height of PersonNode card
+export const NODE_H = 112; // Base height of PersonNode card
 export const BOND_W = 84;  // Width of BondNode
-export const BOND_H = 72;  // Height of BondNode
+export const BOND_H = 76;  // Height of BondNode
 export const SIBLING_GAP = 54; // Horizontal gap between adjacent siblings
 export const SPOUSE_GAP = 60; // Horizontal gap between married spouses on the same generation row
-export const LEVEL_H = 340; // Vertical step between generations
-export const BOND_OFFSET_Y = 145; // Vertical offset of bond node below partner tops (BELOW the couple!)
+export const LEVEL_H = 340; // Base vertical step between generations
+export const BOND_DEPTH = 36; // Vertical distance from couple's shared bottom baseline to top of BondNode
+export const BOND_OFFSET_Y = 148; // Fallback offset of bond node below partner tops
 export const ROOT_GAP = 80; // Gap between distinct root trees
+
+/**
+ * Accurately estimates a PersonNode's rendered height based on its content:
+ * - Base header ribbon + portrait & name: 112px
+ * - Birth/death dates (vitalsText): +20px
+ * - Birth place: +20px
+ * - Non-biological relation pill: +26px
+ * - Multiple spouses switcher buttons: +28px per row of buttons
+ * - Media thumbnail strip: +12px + rows * 46px
+ * - If DOM measured height exists from React Flow, uses Math.max(measured, estimated).
+ */
+export function estimatePersonHeight(node?: FamilyNode, spousesCount: number = 0): number {
+  if (!node) return NODE_H;
+  if (node.measured?.height && node.measured.height > 50) {
+    return Math.max(NODE_H, Math.round(node.measured.height));
+  }
+  const data = node.data;
+  if (!data) return NODE_H;
+
+  let h = NODE_H;
+
+  if (data.dob || data.deathDate) {
+    h += 20;
+  }
+  if (data.birthPlace) {
+    h += 20;
+  }
+  const childRelation = (data as any).childRelation;
+  if (childRelation && childRelation !== "biological") {
+    h += 26;
+  }
+  if (spousesCount > 1) {
+    const rows = Math.ceil(spousesCount / 2);
+    h += 28 + rows * 24;
+  }
+  if (data.media && data.media.length > 0) {
+    const mediaRows = Math.ceil(data.media.length / 4);
+    h += 12 + mediaRows * 46;
+  }
+
+  return Math.max(NODE_H, h);
+}
 
 /**
  * Hierarchical Subtree Bounding-Box Layout Algorithm.
  *
  * Core Architectural Principles:
  * 1. Stack of Horizontal Rectangles (Generation Strata):
- *    - Each generation g sits in a discrete horizontal band (rectangle) at y = g * LEVEL_H.
- *    - All nodes of the same level (e.g. husband, wife, unmarried siblings) share that generation rectangle.
- *    - Offspring extending from an upper node strictly drop into the next lower rectangle (g + 1).
- *    - Marriage bonds sit strictly BELOW the couple nodes at y = g * LEVEL_H + BOND_OFFSET_Y.
+ *    - Each generation g sits in a discrete horizontal band (rectangle) at y = levelY(g).
+ *    - All nodes of the same level share that generation row top.
+ *    - For couples with asymmetric content, partner heights are equalized so both cards
+ *      sit on the EXACT SAME bottom baseline.
+ *    - Marriage bonds sit at a uniform vertical depth (BOND_DEPTH = 36px) strictly below
+ *      the couple's shared bottom baseline.
+ *    - Descendants extending from an upper node strictly drop into the next generation rectangle.
  *
  * 2. Subtree Bounding-Box Invariant:
  *    - The horizontal area allocated to a couple depends on all children lower than them:
@@ -170,7 +216,61 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     }
   });
 
-  // ── 3. Bottom-Up Subtree Width Calculation ──────────────────────────
+  // ── 3. Equalize Couple Heights & Bottom Baselines ───────────────────
+  // When one partner's card is taller than the other (due to dates, birthplace,
+  // photos, multiple spouses, etc.), both partner cards in the couple are
+  // equalized to H_couple = max(heights) so they share the exact same
+  // bottom horizontal baseline.
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+  const nodeCardHeights = new Map<string, number>();
+
+  function assignUnitCardHeights(unit: FamilyUnit) {
+    const coupleHeight = Math.max(
+      ...unit.members.map((mId) => {
+        const mNode = nodeMap.get(mId);
+        const sCount = (bondsOfPerson.get(mId) || []).length;
+        return estimatePersonHeight(mNode, sCount);
+      }),
+      NODE_H,
+    );
+
+    unit.members.forEach((mId) => {
+      nodeCardHeights.set(mId, coupleHeight);
+    });
+
+    unit.children.forEach(assignUnitCardHeights);
+  }
+
+  roots.forEach(assignUnitCardHeights);
+
+  persons.forEach((pId) => {
+    if (!nodeCardHeights.has(pId)) {
+      const pNode = nodeMap.get(pId);
+      const sCount = (bondsOfPerson.get(pId) || []).length;
+      nodeCardHeights.set(pId, estimatePersonHeight(pNode, sCount));
+    }
+  });
+
+  // Calculate dynamic generation row Y levels to comfortably accommodate taller cards
+  const maxGen = Math.max(...Array.from(level.values()), 0);
+  const levelMaxHeight = new Map<number, number>();
+  persons.forEach((pId) => {
+    const lvl = level.get(pId) ?? 0;
+    const h = nodeCardHeights.get(pId) ?? NODE_H;
+    levelMaxHeight.set(lvl, Math.max(levelMaxHeight.get(lvl) ?? NODE_H, h));
+  });
+
+  const levelY = new Map<number, number>();
+  let cumulativeY = 0;
+  for (let g = 0; g <= maxGen + 5; g++) {
+    levelY.set(g, cumulativeY);
+    const maxHg = levelMaxHeight.get(g) ?? NODE_H;
+    // Dynamic row height: couple height + bond depth + bond height + drop clearance to children
+    const rowHeight = Math.max(LEVEL_H, maxHg + BOND_DEPTH + BOND_H + 72);
+    cumulativeY += rowHeight;
+  }
+
+  // ── 4. Bottom-Up Subtree Width Calculation ──────────────────────────
   // The area covered by a couple depends strictly on all children lower than them
   const unitWidthMap = new Map<string, number>();
 
@@ -195,13 +295,13 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
   roots.forEach(calculateUnitWidth);
 
-  // ── 4. Top-Down Recursive Bounding-Box Placement ────────────────────
+  // ── 5. Top-Down Recursive Bounding-Box Placement ────────────────────
   const positions = new Map<string, { x: number; y: number }>();
 
   function placeUnit(unit: FamilyUnit, leftX: number, curLvl: number) {
     const allocatedW = unitWidthMap.get(unit.id) ?? calculateUnitWidth(unit);
     const center = leftX + allocatedW / 2;
-    const y = curLvl * LEVEL_H; // Horizontal rectangle row for this generation
+    const y = levelY.get(curLvl) ?? curLvl * LEVEL_H; // Horizontal rectangle row for this generation
 
     // Place the couple members side-by-side on Generation row y
     const coupleCardsW =
@@ -214,7 +314,15 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
       curX += NODE_W + SPOUSE_GAP;
     });
 
-    // Place marriage bonds strictly BELOW the couple nodes at y + BOND_OFFSET_Y
+    // Both couple nodes have the exact same bottom where they sit: y + coupleH
+    const coupleH = Math.max(
+      ...unit.members.map((mId) => nodeCardHeights.get(mId) ?? NODE_H),
+      NODE_H,
+    );
+    const bottomBaseline = y + coupleH;
+    const bondY = bottomBaseline + BOND_DEPTH;
+
+    // Place marriage bonds at uniform depth strictly below the couple's common bottom baseline
     unit.bonds.forEach((bId) => {
       const parts = partnersOf.get(bId) || [];
       const pts = parts.map((pId) => positions.get(pId)).filter(Boolean) as { x: number; y: number }[];
@@ -223,12 +331,12 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
         const midCenter = (Math.min(...centers) + Math.max(...centers)) / 2;
         positions.set(bId, {
           x: Math.round(midCenter - BOND_W / 2),
-          y: y + BOND_OFFSET_Y,
+          y: bondY,
         });
       } else if (pts.length === 1) {
         positions.set(bId, {
           x: Math.round(pts[0].x + NODE_W / 2 - BOND_W / 2),
-          y: y + BOND_OFFSET_Y,
+          y: bondY,
         });
       }
     });
@@ -267,17 +375,25 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
         const minCenter = Math.min(...centers);
         const maxCenter = Math.max(...centers);
         const midCenter = (minCenter + maxCenter) / 2;
-        const maxY = Math.max(...pts.map((pt) => pt.y));
+
+        const partnerBottoms = parts.map((pId) => {
+          const pt = positions.get(pId);
+          if (!pt) return 0;
+          const cardH = nodeCardHeights.get(pId) ?? NODE_H;
+          return pt.y + cardH;
+        });
+        const maxBottomY = Math.max(...partnerBottoms);
 
         positions.set(bondId, {
           x: Math.round(midCenter - BOND_W / 2),
-          y: maxY + BOND_OFFSET_Y,
+          y: maxBottomY + BOND_DEPTH,
         });
       } else if (pts.length === 1) {
         const pt = pts[0];
+        const cardH = nodeCardHeights.get(parts[0]) ?? NODE_H;
         positions.set(bondId, {
           x: Math.round(pt.x + NODE_W / 2 - BOND_W / 2),
-          y: pt.y + BOND_OFFSET_Y,
+          y: pt.y + cardH + BOND_DEPTH,
         });
       }
     });
@@ -285,7 +401,7 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
   updateBondPositions();
 
-  // ── 5. Sweep-Line Safety Net (Row-by-Row Collision Guard) ───────────
+  // ── 6. Sweep-Line Safety Net (Row-by-Row Collision Guard) ───────────
   const sortedLevels = [...byLevel.keys()].sort((a, b) => a - b);
   sortedLevels.forEach((lvl) => {
     const personsOnLevel = (byLevel.get(lvl) || []).filter((pId) => positions.has(pId));
@@ -348,7 +464,7 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
   updateBondPositions();
 
-  // ── 6. Normalize Coordinates to Comfortable Margins ─────────────────
+  // ── 7. Normalize Coordinates to Comfortable Margins ─────────────────
   const allPos = [...positions.values()];
   const minX = allPos.length ? Math.min(...allPos.map((p) => p.x)) : 0;
   const minY = allPos.length ? Math.min(...allPos.map((p) => p.y)) : 0;
@@ -370,5 +486,9 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   return nodes.map((node) => ({
     ...node,
     position: positions.get(node.id)!,
+    data: {
+      ...node.data,
+      cardHeight: nodeCardHeights.get(node.id) ?? node.data.cardHeight,
+    },
   }));
 }

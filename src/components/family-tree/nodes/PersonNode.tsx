@@ -188,13 +188,16 @@ export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
     return null;
   }, [dobYear, deathYear]);
 
+  const cardHeight = data.cardHeight;
+
   return (
     <div
       className={`relative rounded-2xl border-2 transition-all duration-200 select-none ${genderStyles[gender]} ${
         selected ? "ring-3 ring-sindoor shadow-xl scale-[1.02]" : "shadow-md hover:shadow-lg"
-      } w-[260px] pb-3`}
+      } w-[260px] pb-3 flex flex-col justify-between`}
       style={{
         borderColor: selected ? "#B3173A" : tone.base,
+        minHeight: cardHeight ? `${cardHeight}px` : undefined,
       }}
     >
       <NodeToolbar isVisible={selected} position={Position.Right}>
@@ -204,7 +207,7 @@ export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
 
       {/* Generation Header Ribbon */}
       <div
-        className="flex items-center justify-between px-3 py-1 rounded-t-[14px] text-[10px] font-bold tracking-wider uppercase"
+        className="flex items-center justify-between px-3 py-1 rounded-t-[14px] text-[10px] font-bold tracking-wider uppercase shrink-0"
         style={{
           backgroundColor: tone.base,
           color: tone.ink,
@@ -218,100 +221,107 @@ export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
       </div>
 
       {/* Main Person Content */}
-      <div className="p-3 pt-2.5">
-        <div className="flex items-start gap-3 text-left">
-          <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handleProfileImageChange} />
-          
-          {/* Avatar / Portrait */}
-          <div
-            className="w-13 h-13 rounded-xl border border-outline-variant/60 flex items-center justify-center relative overflow-hidden shrink-0 group cursor-pointer shadow-xs"
-            style={{ backgroundColor: tone.soft }}
-            onClick={() => fileRef.current?.click()}
-            title="Click to upload portrait"
-          >
-            {data.profileImage ? (
-              <img src={data.profileImage} alt={data.label} className="w-full h-full object-cover" />
-            ) : (
-              <div className="flex flex-col items-center justify-center text-center">
-                <span className="font-serif font-bold text-lg" style={{ color: tone.deep }}>
-                  {data.label ? data.label.charAt(0).toUpperCase() : genderIcon[gender]}
-                </span>
+      <div className="p-3 pt-2.5 flex-1 flex flex-col justify-between">
+        <div>
+          <div className="flex items-start gap-3 text-left">
+            <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handleProfileImageChange} />
+            
+            {/* Avatar / Portrait */}
+            <div
+              className="w-13 h-13 rounded-xl border border-outline-variant/60 flex items-center justify-center relative overflow-hidden shrink-0 group cursor-pointer shadow-xs"
+              style={{ backgroundColor: tone.soft }}
+              onClick={() => fileRef.current?.click()}
+              title="Click to upload portrait"
+            >
+              {data.profileImage ? (
+                <img src={data.profileImage} alt={data.label} className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center">
+                  <span className="font-serif font-bold text-lg" style={{ color: tone.deep }}>
+                    {data.label ? data.label.charAt(0).toUpperCase() : genderIcon[gender]}
+                  </span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-4 h-4 text-white" />
               </div>
-            )}
-            <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="w-4 h-4 text-white" />
+            </div>
+
+            {/* Details */}
+            <div className="flex flex-col flex-1 min-w-0">
+              <h4 className="font-serif font-bold text-[15px] leading-snug text-himal truncate" title={data.label}>
+                {data.label || "Unnamed Purkha"}
+              </h4>
+
+              {vitalsText && (
+                <div className="flex items-center gap-1 text-[11px] font-mono text-on-surface-variant/90 mt-0.5">
+                  <Calendar className="w-3 h-3 shrink-0 opacity-70" />
+                  <span>{vitalsText}</span>
+                </div>
+              )}
+
+              {data.birthPlace && (
+                <div className="flex items-center gap-1 text-[10px] text-on-surface-variant/80 mt-0.5 truncate" title={data.birthPlace}>
+                  <MapPin className="w-3 h-3 shrink-0 opacity-70 text-sindoor" />
+                  <span className="truncate">{data.birthPlace}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Details */}
-          <div className="flex flex-col flex-1 min-w-0">
-            <h4 className="font-serif font-bold text-[15px] leading-snug text-himal truncate" title={data.label}>
-              {data.label || "Unnamed Purkha"}
-            </h4>
-
-            {vitalsText && (
-              <div className="flex items-center gap-1 text-[11px] font-mono text-on-surface-variant/90 mt-0.5">
-                <Calendar className="w-3 h-3 shrink-0 opacity-70" />
-                <span>{vitalsText}</span>
-              </div>
-            )}
-
-            {data.birthPlace && (
-              <div className="flex items-center gap-1 text-[10px] text-on-surface-variant/80 mt-0.5 truncate" title={data.birthPlace}>
-                <MapPin className="w-3 h-3 shrink-0 opacity-70 text-sindoor" />
-                <span className="truncate">{data.birthPlace}</span>
-              </div>
-            )}
-          </div>
+          {/* Adopted / Non-biological relation pill */}
+          {childRelation !== "biological" && (
+            <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-sayapatri/20 text-sayapatri-deep border border-sayapatri/40">
+              <span>{childRelation === "adopted" ? "🤝 धर्मपुत्र/पुत्री" : childRelation === "foster" ? "🏠" : "👣"}</span>
+              <span>{childRelation}</span>
+            </div>
+          )}
         </div>
 
-        {/* Adopted / Non-biological relation pill */}
-        {childRelation !== "biological" && (
-          <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-sayapatri/20 text-sayapatri-deep border border-sayapatri/40">
-            <span>{childRelation === "adopted" ? "🤝 धर्मपुत्र/पुत्री" : childRelation === "foster" ? "🏠" : "👣"}</span>
-            <span>{childRelation}</span>
+        {/* Bottom Section (Spouses & Media) */}
+        {(spouses.length > 1 || (data.media && data.media.length > 0)) && (
+          <div className="mt-2">
+            {/* Multiple Spouses Selector */}
+            {spouses.length > 1 && (
+              <div className="pt-2 border-t border-outline-variant/40 flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-on-surface-variant/70">
+                  <span>Partners (जीवनसाथी)</span>
+                  <span className="font-mono">{spouses.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {spouses.map((s) => {
+                    const isActive = actions.getActiveSpouse(id) === s.bondId;
+                    const bondNode = actions.getNode(s.bondId);
+                    const bondStatus = bondNode?.data.bondStatus ?? "married";
+                    const statusIcon = bondStatus === "divorced" ? "💔" : bondStatus === "separated" ? "⚡" : bondStatus === "widowed" ? "🕊️" : "";
+                    return (
+                      <button
+                        key={s.bondId}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          actions.setActiveSpouse(id, s.bondId);
+                        }}
+                        className={`px-2 py-0.5 text-[10px] rounded-full border transition-colors truncate max-w-[110px] ${
+                          isActive
+                            ? "bg-himal text-white border-himal font-medium shadow-xs"
+                            : "bg-surface-container-low border-outline-variant hover:bg-surface-container text-on-surface"
+                        }`}
+                        title={`${s.spouseNode?.data.label ?? "Spouse"} (${bondStatus})`}
+                      >
+                        {statusIcon && <span className="mr-0.5">{statusIcon}</span>}
+                        {s.spouseNode?.data.label?.split(" ")[0] ?? "Spouse"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Media Strip */}
+            <MediaStrip nodeId={id} media={data.media ?? []} />
           </div>
         )}
-
-        {/* Multiple Spouses Selector */}
-        {spouses.length > 1 && (
-          <div className="mt-2.5 pt-2 border-t border-outline-variant/40 flex flex-col gap-1">
-            <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-on-surface-variant/70">
-              <span>Partners (जीवनसाथी)</span>
-              <span className="font-mono">{spouses.length}</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {spouses.map((s) => {
-                const isActive = actions.getActiveSpouse(id) === s.bondId;
-                const bondNode = actions.getNode(s.bondId);
-                const bondStatus = bondNode?.data.bondStatus ?? "married";
-                const statusIcon = bondStatus === "divorced" ? "💔" : bondStatus === "separated" ? "⚡" : bondStatus === "widowed" ? "🕊️" : "";
-                return (
-                  <button
-                    key={s.bondId}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      actions.setActiveSpouse(id, s.bondId);
-                    }}
-                    className={`px-2 py-0.5 text-[10px] rounded-full border transition-colors truncate max-w-[110px] ${
-                      isActive
-                        ? "bg-himal text-white border-himal font-medium shadow-xs"
-                        : "bg-surface-container-low border-outline-variant hover:bg-surface-container text-on-surface"
-                    }`}
-                    title={`${s.spouseNode?.data.label ?? "Spouse"} (${bondStatus})`}
-                  >
-                    {statusIcon && <span className="mr-0.5">{statusIcon}</span>}
-                    {s.spouseNode?.data.label?.split(" ")[0] ?? "Spouse"}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Media Strip */}
-        <MediaStrip nodeId={id} media={data.media ?? []} />
       </div>
 
       {/* Descendant Expand/Collapse Button */}

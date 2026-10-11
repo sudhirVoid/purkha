@@ -26,6 +26,7 @@ export type FamilyNodeData = {
   generation?: number;
   childrenCount?: number;
   partnerBond?: string;
+  cardHeight?: number;
 };
 
 export type FamilyNode = Node<FamilyNodeData>;

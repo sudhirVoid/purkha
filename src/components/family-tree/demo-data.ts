@@ -4,12 +4,12 @@ import { personNode, bondNode, mkEdge } from "./factories";
 
 // ── Default initial tree ──────────────────────────────────────────────
 export const initialNodes: FamilyNode[] = [
-  personNode("husband", 40, 40, "Husband", "male"),
-  personNode("wife", 460, 40, "Wife", "female"),
-  bondNode("love", 270, 200, "2005-06-12", "married", true),
-  personNode("c1", 60, 380, "Child 1", "male"),
-  personNode("c2", 260, 380, "Child 2", "female"),
-  personNode("c3", 460, 380, "Child 3", "other"),
+  personNode("husband", 170, 60, "Husband", "male"),
+  personNode("wife", 578, 60, "Wife", "female"),
+  bondNode("love", 462, 142, "2005-06-12", "married", true),
+  personNode("c1", 60, 350, "Child 1", "male"),
+  personNode("c2", 374, 350, "Child 2", "female"),
+  personNode("c3", 688, 350, "Child 3", "other"),
 ];
 
 export const initialEdges: Edge[] = [

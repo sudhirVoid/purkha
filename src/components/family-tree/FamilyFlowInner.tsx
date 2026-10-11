@@ -229,8 +229,8 @@ export default function FamilyFlowInner({
         const spouseGender: Gender =
           person.data.gender === "male" ? "female" : person.data.gender === "female" ? "male" : "other";
         const newNodes = [
-          personNode(spouseId, person.position.x + 360, person.position.y, "Spouse (दम्पती)", spouseGender),
-          bondNode(bId, person.position.x + 180, person.position.y + 90),
+          personNode(spouseId, person.position.x + 408, person.position.y, "Spouse (दम्पती)", spouseGender),
+          bondNode(bId, person.position.x + 292, person.position.y + 82),
         ];
         commit((currentNodes, currentEdges) => ({
           nodes: [...currentNodes, ...newNodes],
@@ -241,11 +241,11 @@ export default function FamilyFlowInner({
         const person = nodes.find((node) => node.id === personId)!;
         const parentBond = queries.parentBondOf(personId);
         const newParentId = nextId();
-        const offsetX = label === "Father" ? -180 : 180;
+        const offsetX = label === "Father" ? -314 : 314;
         const parent = personNode(
           newParentId,
           person.position.x + offsetX,
-          person.position.y - 280,
+          person.position.y - 290,
           label === "Father" ? "Father (बुवा)" : "Mother (आमा)",
           label === "Father" ? "male" : "female",
         );
@@ -265,8 +265,8 @@ export default function FamilyFlowInner({
           const bId = nextId();
           const bond = bondNode(
             bId,
-            (existing.position.x + parent.position.x) / 2 + 40,
-            existing.position.y + 90,
+            Math.round((existing.position.x + parent.position.x) / 2 + 88),
+            existing.position.y + 82,
           );
           commit((currentNodes, currentEdges) => {
             const filtered = currentEdges.filter(
@@ -297,7 +297,7 @@ export default function FamilyFlowInner({
         const source = parentBond ?? directParents[0];
         if (!source) return;
         const sibId = nextId();
-        const sib = personNode(sibId, person.position.x + 260, person.position.y, "Sibling (दाजुभाइ/दिदीबहिनी)");
+        const sib = personNode(sibId, person.position.x + 314, person.position.y, "Sibling (दाजुभाइ/दिदीबहिनी)");
         commit((currentNodes, currentEdges) => ({
           nodes: [...currentNodes, sib],
           edges: [...currentEdges, mkEdge(source, sibId)],

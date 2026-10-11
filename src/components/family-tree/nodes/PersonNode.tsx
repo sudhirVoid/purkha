@@ -192,7 +192,7 @@ export function PersonNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
     <div
       className={`relative rounded-2xl border-2 transition-all duration-200 select-none ${genderStyles[gender]} ${
         selected ? "ring-3 ring-sindoor shadow-xl scale-[1.02]" : "shadow-md hover:shadow-lg"
-      } min-w-[230px] max-w-[270px] pb-3`}
+      } w-[260px] pb-3`}
       style={{
         borderColor: selected ? "#B3173A" : tone.base,
       }}

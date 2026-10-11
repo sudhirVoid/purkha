@@ -4,7 +4,18 @@ import { useState, useEffect, FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { PurkhaMark } from "@/components/brand/PurkhaLogo";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, KeyRound, Loader2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  KeyRound,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 type LoginSearch = {
   redirect?: string;
@@ -27,7 +38,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const { user, isAuthenticated, isLoading, signInWithEmail, signUpWithEmail, sendPasswordReset } = useAuth();
+  const { isAuthenticated, isLoading, signInWithEmail, signUpWithEmail, sendPasswordReset } = useAuth();
 
   const [authMode, setAuthMode] = useState<AuthMode>("signIn");
   const [email, setEmail] = useState("");
@@ -37,6 +48,8 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   // If already authenticated, redirect to destination
   useEffect(() => {
@@ -45,11 +58,23 @@ function LoginPage() {
     }
   }, [isAuthenticated, isLoading, navigate, search.redirect]);
 
+  const switchMode = (newMode: AuthMode) => {
+    setAuthMode(newMode);
+    setFormError(null);
+    setFormSuccess(null);
+    setPassword("");
+    setConfirmPassword("");
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    setFormError(null);
+    setFormSuccess(null);
 
     if (!email.trim()) {
-      toast.error("Please enter your email address.");
+      const missingEmailMessage = "Please enter your email address.";
+      setFormError(missingEmailMessage);
+      toast.error(missingEmailMessage);
       return;
     }
 
@@ -57,10 +82,12 @@ function LoginPage() {
       setIsSubmitting(true);
       try {
         await sendPasswordReset(email.trim());
-        toast.success("Password reset link sent! Check your inbox.");
-        setAuthMode("signIn");
+        const resetSentMessage = `Password reset link sent to ${email.trim()}! Please check your email inbox and spam folder.`;
+        setFormSuccess(resetSentMessage);
+        toast.success(resetSentMessage);
       } catch (submitError: unknown) {
         const errorMessage = submitError instanceof Error ? submitError.message : "Failed to send reset email.";
+        setFormError(errorMessage);
         toast.error(errorMessage);
       } finally {
         setIsSubmitting(false);
@@ -69,18 +96,24 @@ function LoginPage() {
     }
 
     if (!password) {
-      toast.error("Please enter your password.");
+      const missingPasswordMessage = "Please enter your password.";
+      setFormError(missingPasswordMessage);
+      toast.error(missingPasswordMessage);
       return;
     }
 
     if (authMode === "signUp") {
       if (password.length < 6) {
-        toast.error("Password must be at least 6 characters long.");
+        const weakPasswordMessage = "Password must be at least 6 characters long.";
+        setFormError(weakPasswordMessage);
+        toast.error(weakPasswordMessage);
         return;
       }
 
       if (password !== confirmPassword) {
-        toast.error("Passwords do not match. Please verify.");
+        const mismatchMessage = "Passwords do not match. Please verify both fields.";
+        setFormError(mismatchMessage);
+        toast.error(mismatchMessage);
         return;
       }
 
@@ -91,6 +124,7 @@ function LoginPage() {
         navigate({ to: search.redirect || "/builder" });
       } catch (submitError: unknown) {
         const errorMessage = submitError instanceof Error ? submitError.message : "Failed to create account.";
+        setFormError(errorMessage);
         toast.error(errorMessage);
       } finally {
         setIsSubmitting(false);
@@ -106,6 +140,7 @@ function LoginPage() {
       navigate({ to: search.redirect || "/builder" });
     } catch (submitError: unknown) {
       const errorMessage = submitError instanceof Error ? submitError.message : "Failed to sign in.";
+      setFormError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -175,11 +210,7 @@ function LoginPage() {
                 <button
                   type="button"
                   id="tab-signin"
-                  onClick={() => {
-                    setAuthMode("signIn");
-                    setPassword("");
-                    setConfirmPassword("");
-                  }}
+                  onClick={() => switchMode("signIn")}
                   className={`py-2.5 transition-all font-semibold ${
                     authMode === "signIn"
                       ? "bg-surface-bright text-himal shadow-sm border border-outline-variant/40"
@@ -191,11 +222,7 @@ function LoginPage() {
                 <button
                   type="button"
                   id="tab-signup"
-                  onClick={() => {
-                    setAuthMode("signUp");
-                    setPassword("");
-                    setConfirmPassword("");
-                  }}
+                  onClick={() => switchMode("signUp")}
                   className={`py-2.5 transition-all font-semibold ${
                     authMode === "signUp"
                       ? "bg-surface-bright text-himal shadow-sm border border-outline-variant/40"
@@ -204,6 +231,57 @@ function LoginPage() {
                 >
                   Create Account
                 </button>
+              </div>
+            )}
+
+            {/* Inline Error Banner */}
+            {formError && (
+              <div className="p-3.5 bg-red-50 border border-sindoor/30 text-sindoor text-sm flex flex-col gap-2 rounded-sm">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-sindoor" />
+                  <span className="font-body-md text-xs sm:text-sm leading-relaxed">{formError}</span>
+                </div>
+                {formError.includes("already exists") && (
+                  <div className="pt-1 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => switchMode("signIn")}
+                      className="font-label-xs text-xs uppercase tracking-wider underline text-himal hover:text-sindoor font-semibold"
+                    >
+                      → Switch to Sign In
+                    </button>
+                  </div>
+                )}
+                {formError.includes("Forgot password") && (
+                  <div className="pt-1 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => switchMode("forgotPassword")}
+                      className="font-label-xs text-xs uppercase tracking-wider underline text-himal hover:text-sindoor font-semibold"
+                    >
+                      → Reset Password Now
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Inline Success Banner */}
+            {formSuccess && (
+              <div className="p-3.5 bg-green-50 border border-green-600/30 text-green-900 text-sm flex flex-col gap-2 rounded-sm">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-green-700" />
+                  <span className="font-body-md text-xs sm:text-sm leading-relaxed">{formSuccess}</span>
+                </div>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => switchMode("signIn")}
+                    className="font-label-xs text-xs uppercase tracking-wider underline text-green-800 hover:text-green-950 font-semibold"
+                  >
+                    ← Return to Sign In
+                  </button>
+                </div>
               </div>
             )}
 
@@ -273,7 +351,7 @@ function LoginPage() {
                       <button
                         type="button"
                         id="btn-forgot-password"
-                        onClick={() => setAuthMode("forgotPassword")}
+                        onClick={() => switchMode("forgotPassword")}
                         className="font-label-xs text-label-xs text-sindoor hover:text-himal transition-colors underline-offset-2 hover:underline"
                       >
                         Forgot password?
@@ -384,7 +462,7 @@ function LoginPage() {
                 <button
                   type="button"
                   id="btn-back-to-signin"
-                  onClick={() => setAuthMode("signIn")}
+                  onClick={() => switchMode("signIn")}
                   className="font-label-sm text-label-sm uppercase tracking-wider text-sindoor hover:text-himal transition-colors"
                 >
                   ← Back to Sign In
@@ -401,11 +479,7 @@ function LoginPage() {
                     <button
                       type="button"
                       id="link-to-signup"
-                      onClick={() => {
-                        setAuthMode("signUp");
-                        setPassword("");
-                        setConfirmPassword("");
-                      }}
+                      onClick={() => switchMode("signUp")}
                       className="font-semibold text-sindoor hover:text-himal underline-offset-2 hover:underline ml-1"
                     >
                       Create one
@@ -417,11 +491,7 @@ function LoginPage() {
                     <button
                       type="button"
                       id="link-to-signin"
-                      onClick={() => {
-                        setAuthMode("signIn");
-                        setPassword("");
-                        setConfirmPassword("");
-                      }}
+                      onClick={() => switchMode("signIn")}
                       className="font-semibold text-sindoor hover:text-himal underline-offset-2 hover:underline ml-1"
                     >
                       Sign in

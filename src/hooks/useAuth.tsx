@@ -25,31 +25,47 @@ export interface AuthContextType {
 export function getFriendlyAuthErrorMessage(error: unknown): string {
   const firebaseError = error as { code?: string; message?: string };
   const errorCode = firebaseError?.code || "";
+  const errorMessage = firebaseError?.message || "";
+  const combinedError = `${errorCode} ${errorMessage}`.toLowerCase();
 
-  switch (errorCode) {
-    case "auth/invalid-credential":
-    case "auth/wrong-password":
-    case "auth/user-not-found":
-      return "Incorrect email or password. Please verify your credentials.";
-    case "auth/email-already-in-use":
-      return "An account with this email address already exists. Please sign in.";
-    case "auth/weak-password":
-      return "Password must be at least 6 characters long.";
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    case "auth/user-disabled":
-      return "This account has been disabled. Please contact support.";
-    case "auth/too-many-requests":
-      return "Too many unsuccessful attempts. Please wait a few moments and try again.";
-    case "auth/network-request-failed":
-      return "Network error. Please check your internet connection.";
-    case "auth/missing-password":
-      return "Please enter your password.";
-    default: {
-      const rawMessage = firebaseError?.message || "Authentication failed. Please try again.";
-      return rawMessage.replace(/^Firebase:\s*/, "");
-    }
+  if (combinedError.includes("email-already-in-use") || combinedError.includes("email_exists")) {
+    return "An account with this email already exists. Please switch to Sign In, or use 'Forgot password' if you need to reset it.";
   }
+  if (
+    combinedError.includes("invalid-credential") ||
+    combinedError.includes("wrong-password") ||
+    combinedError.includes("user-not-found") ||
+    combinedError.includes("invalid_login_credentials") ||
+    combinedError.includes("email_not_found")
+  ) {
+    return "Incorrect email or password. If this account was previously created with a magic link, please use 'Forgot password' to set a password.";
+  }
+  if (combinedError.includes("weak-password")) {
+    return "Password must be at least 6 characters long.";
+  }
+  if (combinedError.includes("invalid-email") || combinedError.includes("invalid_email")) {
+    return "Please enter a valid email address.";
+  }
+  if (combinedError.includes("user-disabled")) {
+    return "This account has been disabled. Please contact support.";
+  }
+  if (combinedError.includes("too-many-requests")) {
+    return "Too many unsuccessful attempts. Please wait a moment and try again.";
+  }
+  if (combinedError.includes("network-request-failed")) {
+    return "Network connection issue. Please check your internet connection.";
+  }
+  if (combinedError.includes("missing-password")) {
+    return "Please enter your password.";
+  }
+  if (combinedError.includes("operation-not-allowed")) {
+    return "Email/password authentication is not enabled for this project. Please check Firebase configuration.";
+  }
+
+  const cleanedMessage = errorMessage
+    .replace(/^Firebase:\s*/, "")
+    .replace(/\s*\(auth\/[^)]+\)\.?$/, "");
+  return cleanedMessage || "Authentication failed. Please try again.";
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

@@ -1,21 +1,34 @@
 import { Link } from "@tanstack/react-router";
 import { PurkhaLogo } from "@/components/brand/PurkhaLogo";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
 
 const navLinkClass =
   "font-label-sm text-label-sm uppercase tracking-[0.14em] text-on-surface-variant hover:text-sindoor transition-colors";
 
 export function NavBar() {
+  const { user } = useAuth();
+  const [isClientMounted, setIsClientMounted] = useState(false);
+
+  useEffect(() => {
+    setIsClientMounted(true);
+  }, []);
+
   return (
     <nav
       aria-label="Primary"
       className="fixed top-0 z-50 w-full border-b border-lokta-border/70 bg-surface-bright/85 backdrop-blur-md"
+      suppressHydrationWarning
     >
-      <div className="flex h-[72px] w-full items-center justify-between px-margin-mobile md:px-margin-desktop">
-        <div className="flex items-center gap-10">
+      <div
+        className="flex h-[72px] w-full items-center justify-between px-margin-mobile md:px-margin-desktop"
+        suppressHydrationWarning
+      >
+        <div className="flex items-center gap-10" suppressHydrationWarning>
           <Link to="/" aria-label="PURKHA home">
             <PurkhaLogo size="md" />
           </Link>
-          <div className="hidden md:flex gap-7 items-center">
+          <div className="hidden md:flex gap-7 items-center" suppressHydrationWarning>
             <Link to="/builder" className={navLinkClass}>
               Vamshavali
             </Link>
@@ -27,7 +40,7 @@ export function NavBar() {
             </a>
           </div>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-5" suppressHydrationWarning>
           <div className="relative hidden lg:block">
             <label htmlFor="nav-search" className="sr-only">
               Search ancestors
@@ -42,16 +55,29 @@ export function NavBar() {
               search
             </span>
           </div>
-          <Link
-            to="/login"
-            id="nav-join-league"
-            className="group inline-flex items-center gap-2 bg-sindoor-deep px-5 py-2.5 font-label-sm text-label-sm uppercase tracking-[0.16em] text-lokta-light transition-colors hover:bg-himal"
-          >
-            Join the League
-            <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5">
-              arrow_right_alt
-            </span>
-          </Link>
+          {isClientMounted && user ? (
+            <Link
+              to="/dashboard"
+              id="nav-dashboard"
+              className="group inline-flex items-center gap-2 bg-himal px-5 py-2.5 font-label-sm text-label-sm uppercase tracking-[0.16em] text-lokta-light transition-colors hover:bg-sindoor-deep"
+            >
+              Dashboard
+              <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5">
+                account_tree
+              </span>
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              id="nav-join-league"
+              className="group inline-flex items-center gap-2 bg-sindoor-deep px-5 py-2.5 font-label-sm text-label-sm uppercase tracking-[0.16em] text-lokta-light transition-colors hover:bg-himal"
+            >
+              Join the League
+              <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5">
+                arrow_right_alt
+              </span>
+            </Link>
+          )}
         </div>
       </div>
     </nav>

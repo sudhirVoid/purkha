@@ -8,9 +8,17 @@ type CollapseBtnProps = {
   childrenCount?: number;
   tone?: GenerationTone;
   className?: string;
+  floating?: boolean;
 };
 
-export function CollapseBtn({ id, isCollapsed, childrenCount, tone, className = "" }: CollapseBtnProps) {
+export function CollapseBtn({
+  id,
+  isCollapsed,
+  childrenCount,
+  tone,
+  className = "",
+  floating = true,
+}: CollapseBtnProps) {
   const actions = useActions();
   if (!actions.canCollapse(id) && !(childrenCount && childrenCount > 0)) return null;
 
@@ -19,6 +27,10 @@ export function CollapseBtn({ id, isCollapsed, childrenCount, tone, className = 
   const text = tone?.deep ?? "#14295C";
   const border = tone?.base ?? "#E4D3B4";
 
+  const positionCls = floating
+    ? "absolute -bottom-3.5 left-1/2 -translate-x-1/2"
+    : "relative mt-1";
+
   return (
     <button
       type="button"
@@ -26,7 +38,7 @@ export function CollapseBtn({ id, isCollapsed, childrenCount, tone, className = 
         event.stopPropagation();
         actions.toggleCollapse(id);
       }}
-      className={`absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer select-none border ${className}`}
+      className={`${positionCls} z-20 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer select-none border ${className}`}
       style={{
         backgroundColor: isCollapsed ? (tone?.base ?? "#B3173A") : bg,
         color: isCollapsed ? (tone?.ink ?? "#FFFFFF") : text,

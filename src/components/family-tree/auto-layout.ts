@@ -8,9 +8,9 @@ export const NODE_H = 112; // Typical height of PersonNode card
 export const BOND_W = 84;  // Width of BondNode
 export const BOND_H = 72;  // Height of BondNode
 export const SIBLING_GAP = 54; // Horizontal gap between adjacent siblings
-export const BOND_PADDING = 32; // Horizontal padding between partner and bond node
-export const LEVEL_H = 290; // Vertical step between generations
-export const BOND_DY = 82;  // Vertical offset of bond node below partner tops
+export const SPOUSE_GAP = 60; // Horizontal gap between married spouses on the same generation row
+export const LEVEL_H = 340; // Vertical step between generations
+export const BOND_OFFSET_Y = 145; // Vertical offset of bond node below partner tops (BELOW the couple!)
 export const ROOT_GAP = 80; // Gap between distinct root trees
 
 /**
@@ -21,12 +21,13 @@ export const ROOT_GAP = 80; // Gap between distinct root trees
  *    - Each generation g sits in a discrete horizontal band (rectangle) at y = g * LEVEL_H.
  *    - All nodes of the same level (e.g. husband, wife, unmarried siblings) share that generation rectangle.
  *    - Offspring extending from an upper node strictly drop into the next lower rectangle (g + 1).
- *    - Marriage bonds sit in the vertical transition layer (y = g * LEVEL_H + BOND_DY).
+ *    - Marriage bonds sit strictly BELOW the couple nodes at y = g * LEVEL_H + BOND_OFFSET_Y.
  *
  * 2. Subtree Bounding-Box Invariant:
  *    - The horizontal area allocated to a couple depends on all children lower than them:
  *      W(unit) = max(W_couple, sum(W_children) + gaps).
  *    - The couple is centered as a united block within [L, L + W(unit)].
+ *    - The marriage bond is placed directly BELOW the couple in the center of their boundary.
  *    - All children and their descendant subtrees are partitioned strictly inside [L, L + W(unit)].
  *    - Children from one couple NEVER leave their parents' boundary or show on the other side.
  */
@@ -117,7 +118,6 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
     // Collect all children born from this unit's bonds and direct parent ties
     const childIds: string[] = [];
-    // Prioritize bond order so children appear under their respective mother/father's side
     orderedBonds.forEach((bId) => {
       (childrenOfBond.get(bId) || []).forEach((k) => {
         if (!childIds.includes(k)) childIds.push(k);
@@ -176,7 +176,7 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
   function calculateUnitWidth(unit: FamilyUnit): number {
     const coupleCardsW =
-      unit.members.length * NODE_W + unit.bonds.length * (BOND_PADDING * 2 + BOND_W);
+      unit.members.length * NODE_W + Math.max(0, unit.members.length - 1) * SPOUSE_GAP;
 
     if (unit.children.length === 0) {
       unitWidthMap.set(unit.id, coupleCardsW);
@@ -203,22 +203,33 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     const center = leftX + allocatedW / 2;
     const y = curLvl * LEVEL_H; // Horizontal rectangle row for this generation
 
-    // Place the couple united as a block centered over the boundary
+    // Place the couple members side-by-side on Generation row y
     const coupleCardsW =
-      unit.members.length * NODE_W + unit.bonds.length * (BOND_PADDING * 2 + BOND_W);
+      unit.members.length * NODE_W + Math.max(0, unit.members.length - 1) * SPOUSE_GAP;
     const coupleStartX = Math.round(center - coupleCardsW / 2);
 
     let curX = coupleStartX;
-    unit.members.forEach((mId, idx) => {
+    unit.members.forEach((mId) => {
       positions.set(mId, { x: curX, y });
-      curX += NODE_W;
-      if (idx < unit.bonds.length) {
-        const bId = unit.bonds[idx];
+      curX += NODE_W + SPOUSE_GAP;
+    });
+
+    // Place marriage bonds strictly BELOW the couple nodes at y + BOND_OFFSET_Y
+    unit.bonds.forEach((bId) => {
+      const parts = partnersOf.get(bId) || [];
+      const pts = parts.map((pId) => positions.get(pId)).filter(Boolean) as { x: number; y: number }[];
+      if (pts.length >= 2) {
+        const centers = pts.map((pt) => pt.x + NODE_W / 2);
+        const midCenter = (Math.min(...centers) + Math.max(...centers)) / 2;
         positions.set(bId, {
-          x: curX + BOND_PADDING,
-          y: y + BOND_DY,
+          x: Math.round(midCenter - BOND_W / 2),
+          y: y + BOND_OFFSET_Y,
         });
-        curX += BOND_PADDING * 2 + BOND_W;
+      } else if (pts.length === 1) {
+        positions.set(bId, {
+          x: Math.round(pts[0].x + NODE_W / 2 - BOND_W / 2),
+          y: y + BOND_OFFSET_Y,
+        });
       }
     });
 
@@ -246,7 +257,7 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
     rootCursorX += unitWidthMap.get(rootUnit.id)! + ROOT_GAP;
   });
 
-  // Re-center all bonds accurately between partners
+  // Re-center all bonds accurately below partners
   const updateBondPositions = () => {
     bonds.forEach((bondId) => {
       const parts = partnersOf.get(bondId) || [];
@@ -260,13 +271,13 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
         positions.set(bondId, {
           x: Math.round(midCenter - BOND_W / 2),
-          y: maxY + BOND_DY,
+          y: maxY + BOND_OFFSET_Y,
         });
       } else if (pts.length === 1) {
         const pt = pts[0];
         positions.set(bondId, {
           x: Math.round(pt.x + NODE_W / 2 - BOND_W / 2),
-          y: pt.y + BOND_DY,
+          y: pt.y + BOND_OFFSET_Y,
         });
       }
     });
@@ -292,7 +303,7 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
         (partnersOf.get(bId) || []).includes(currId),
       );
 
-      const requiredGap = sharedBond ? BOND_PADDING * 2 + BOND_W : SIBLING_GAP;
+      const requiredGap = sharedBond ? SPOUSE_GAP : SIBLING_GAP;
       const minRequiredX = prevX + NODE_W + requiredGap;
 
       if (currX < minRequiredX) {

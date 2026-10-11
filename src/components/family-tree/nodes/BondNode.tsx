@@ -127,7 +127,7 @@ export function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
   const tone = toneFor(generation);
 
   return (
-    <div className="relative flex flex-col items-center select-none group pb-3">
+    <div className="relative flex flex-col items-center select-none group pb-1">
       <NodeToolbar isVisible={selected} position={Position.Right}>
         <BondToolbar id={id} data={data} />
       </NodeToolbar>
@@ -159,7 +159,7 @@ export function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
 
       {/* Union Badge & Date */}
       <div
-        className={`-mt-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase shadow-xs flex items-center gap-1 backdrop-blur-xs ${cfg.badgeCls}`}
+        className={`-mt-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase shadow-xs flex items-center gap-1 backdrop-blur-xs whitespace-nowrap ${cfg.badgeCls}`}
       >
         <span className="font-devanagari">{cfg.nepali}</span>
         {status === "divorced" && prettyDivorce ? (
@@ -169,12 +169,13 @@ export function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
         ) : null}
       </div>
 
-      {/* Descendant Expand/Collapse Button */}
+      {/* Descendant Expand/Collapse Button (stacked cleanly below marriage badge) */}
       <CollapseBtn
         id={id}
         isCollapsed={data.isCollapsed}
         childrenCount={data.childrenCount}
         tone={tone}
+        floating={false}
       />
     </div>
   );

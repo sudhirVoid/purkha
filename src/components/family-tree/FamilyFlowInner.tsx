@@ -229,8 +229,8 @@ export default function FamilyFlowInner({
         const spouseGender: Gender =
           person.data.gender === "male" ? "female" : person.data.gender === "female" ? "male" : "other";
         const newNodes = [
-          personNode(spouseId, person.position.x + 408, person.position.y, "Spouse (दम्पती)", spouseGender),
-          bondNode(bId, person.position.x + 292, person.position.y + 82),
+          personNode(spouseId, person.position.x + 320, person.position.y, "Spouse (दम्पती)", spouseGender),
+          bondNode(bId, person.position.x + 160, person.position.y + 145),
         ];
         commit((currentNodes, currentEdges) => ({
           nodes: [...currentNodes, ...newNodes],
@@ -241,11 +241,11 @@ export default function FamilyFlowInner({
         const person = nodes.find((node) => node.id === personId)!;
         const parentBond = queries.parentBondOf(personId);
         const newParentId = nextId();
-        const offsetX = label === "Father" ? -314 : 314;
+        const offsetX = label === "Father" ? -320 : 320;
         const parent = personNode(
           newParentId,
           person.position.x + offsetX,
-          person.position.y - 290,
+          person.position.y - 340,
           label === "Father" ? "Father (बुवा)" : "Mother (आमा)",
           label === "Father" ? "male" : "female",
         );
@@ -266,7 +266,7 @@ export default function FamilyFlowInner({
           const bond = bondNode(
             bId,
             Math.round((existing.position.x + parent.position.x) / 2 + 88),
-            existing.position.y + 82,
+            existing.position.y + 145,
           );
           commit((currentNodes, currentEdges) => {
             const filtered = currentEdges.filter(

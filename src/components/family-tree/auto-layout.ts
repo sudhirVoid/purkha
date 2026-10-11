@@ -1,5 +1,6 @@
 import type { Edge } from "@xyflow/react";
 import type { FamilyNode } from "./types";
+import { computeGenerations } from "./generations";
 
 /**
  * Pure layout algorithm for family tree graphs.
@@ -8,7 +9,7 @@ import type { FamilyNode } from "./types";
  * with their `position` fields updated so the tree is laid out
  * top-to-bottom with no overlapping.
  *
- * No React or DOM dependencies — fully testable in isolation.
+ * Children of couples are strictly placed at an inner/lower generation level.
  */
 export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   const kindOf = new Map(nodes.map((node) => [node.id, node.data.kind]));
@@ -32,49 +33,15 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
   const persons = nodes.filter((node) => node.data.kind === "person").map((node) => node.id);
   const bonds = nodes.filter((node) => node.data.kind === "bond").map((node) => node.id);
 
-  // ── Level computation ──────────────────────────────────────────────
-  const level = new Map<string, number>();
-  const compute = (id: string, seen: Set<string>): number => {
-    if (level.has(id)) return level.get(id)!;
-    if (seen.has(id)) return 0;
-    seen.add(id);
-    let lvl = 0;
-    if (parentBondOf.has(id)) {
-      const bond = parentBondOf.get(id)!;
-      const parts = partnersOf.get(bond) || [];
-      if (parts.length) lvl = Math.max(...parts.map((partnerId) => compute(partnerId, seen))) + 1;
-    } else {
-      const dp = persons.filter((personId) => (directChildrenOf.get(personId) || []).includes(id));
-      if (dp.length) lvl = Math.max(...dp.map((personId) => compute(personId, seen))) + 1;
-    }
-    level.set(id, lvl);
-    return lvl;
-  };
-  persons.forEach((personId) => compute(personId, new Set()));
-
-  // Ensure partners in a bond share the same level (max of all partners).
-  let changed = true;
-  while (changed) {
-    changed = false;
-    bonds.forEach((bondId) => {
-      const parts = partnersOf.get(bondId) || [];
-      if (parts.length < 2) return;
-      const maxLvl = Math.max(...parts.map((partnerId) => level.get(partnerId) ?? 0));
-      parts.forEach((partnerId) => {
-        if ((level.get(partnerId) ?? 0) < maxLvl) {
-          level.set(partnerId, maxLvl);
-          changed = true;
-        }
-      });
-    });
-  }
+  // ── Generation Level computation (guarantees partners align & children descend) ──
+  const level = computeGenerations(nodes, edges);
 
   // ── Sizing constants ───────────────────────────────────────────────
-  const LEVEL_H = 260;
-  const NODE_GAP = 50;
-  const NODE_W = 230;
+  const LEVEL_H = 280;
+  const NODE_GAP = 56;
+  const NODE_W = 240;
   const BOND_W = 100;
-  const BOND_DY = 110;
+  const BOND_DY = 90;
 
   // ── Initial person positioning by level ────────────────────────────
   const byLevel = new Map<number, string[]>();
@@ -175,10 +142,10 @@ export function autoLayout(nodes: FamilyNode[], edges: Edge[]): FamilyNode[] {
 
     units.forEach((unit) => {
       unit.members.forEach((memberId, i) => {
-        const cur = positions.get(memberId);
+        const memberLvl = level.get(memberId) ?? 0;
         positions.set(memberId, {
           x: startX + i * step + step / 2,
-          y: cur?.y ?? bondPos.y + LEVEL_H - BOND_DY,
+          y: memberLvl * LEVEL_H,
         });
       });
       startX += unit.width;

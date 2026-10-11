@@ -1,12 +1,13 @@
 import type { Gender, MediaKind } from "./types";
 
 export const genderIcon: Record<Gender, string> = { male: "♂", female: "♀", other: "⚧" };
+export const genderLabel: Record<Gender, string> = { male: "पुरुष", female: "महिला", other: "अन्य" };
 
-// Harmonized with the lokta-texture background (#fcf2e4) using the Heirloom theme palette
+// Refined PURKHA card surfaces — warm lokta cream with subtle gender accents
 export const genderStyles: Record<Gender, string> = {
-  male: "bg-[#f2f6fa] text-[#101d28] border-[#bbc8d7]", // primary-fixed tint
-  female: "bg-[#fff5f0] text-[#341100] border-[#ffb692]", // tertiary-fixed tint
-  other: "bg-[#f2f9f4] text-[#092011] border-[#b2cdb6]", // secondary-fixed tint
+  male: "bg-[#FFFAF4] text-[#14295C] border-[#D4DFEE]",
+  female: "bg-[#FFF9F6] text-[#8E1230] border-[#F2D6DC]",
+  other: "bg-[#FDFBF7] text-[#4A4238] border-[#E4D3B4]",
 };
 
 export const kindStyles: Record<MediaKind, string> = { image: "image", video: "video", audio: "audio" };

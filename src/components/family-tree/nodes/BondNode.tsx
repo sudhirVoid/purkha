@@ -1,232 +1,181 @@
 import { NodeToolbar, Position, type NodeProps } from "@xyflow/react";
+import { Heart, HeartCrack, Flame, Bird, Calendar, Plus, Trash2 } from "lucide-react";
 import type { FamilyNode, FamilyNodeData, BondStatus } from "../types";
 import { useActions } from "../ActionsContext";
 import { formatDate, getLoveColor } from "../utils";
 import { Handles } from "./Handles";
 import { ToolbarBtn } from "./ToolbarBtn";
+import { CollapseBtn } from "./CollapseBtn";
+import { toneFor } from "../generations";
 
-const STATUS_LABELS: Record<BondStatus, string> = {
-  married: "Married",
-  divorced: "Divorced",
-  separated: "Separated",
-  widowed: "Widowed",
+const STATUS_CONFIG: Record<BondStatus, { label: string; nepali: string; icon: string; badgeCls: string }> = {
+  married: {
+    label: "Married",
+    nepali: "विवाह",
+    icon: "💍",
+    badgeCls: "bg-sayapatri/15 text-sayapatri-deep border-sayapatri/40",
+  },
+  divorced: {
+    label: "Divorced",
+    nepali: "सम्बन्धविच्छेद",
+    icon: "💔",
+    badgeCls: "bg-error-container text-error border-error/30",
+  },
+  separated: {
+    label: "Separated",
+    nepali: "अलग",
+    icon: "⚡",
+    badgeCls: "bg-amber-100 text-amber-900 border-amber-300",
+  },
+  widowed: {
+    label: "Widowed",
+    nepali: "एकल",
+    icon: "🕊️",
+    badgeCls: "bg-surface-container-high text-on-surface-variant border-outline-variant",
+  },
 };
 
 function BondToolbar({ id, data }: { id: string; data: FamilyNodeData }) {
   const actions = useActions();
   const status = data.bondStatus ?? "married";
+
   return (
-    <div className="rounded-xl border bg-card shadow-lg p-2 space-y-2 w-[240px]">
-      {/* Status selector */}
-      <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">Status</label>
-      <div className="flex gap-1">
-        {(["married", "divorced", "separated", "widowed"] as BondStatus[]).map((s) => (
-          <button
-            key={s}
-            onClick={() => actions.setBondStatus(id, s)}
-            className={`flex-1 px-1.5 py-1 text-[10px] rounded-md border capitalize transition ${
-              status === s ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+    <div className="rounded-2xl border border-lokta-border bg-surface-bright/95 backdrop-blur-md shadow-2xl p-3 space-y-2.5 w-[250px] text-on-surface">
+      <div>
+        <label className="block text-[10px] uppercase font-bold tracking-wider text-himal mb-1">
+          Union Status (सम्बन्ध स्थिति)
+        </label>
+        <div className="grid grid-cols-2 gap-1">
+          {(["married", "divorced", "separated", "widowed"] as BondStatus[]).map((s) => {
+            const isSelected = status === s;
+            const cfg = STATUS_CONFIG[s];
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => actions.setBondStatus(id, s)}
+                className={`px-2 py-1 text-[11px] rounded-lg border font-medium transition-colors flex items-center justify-center gap-1 ${
+                  isSelected
+                    ? "bg-himal text-lokta-light border-himal shadow-xs"
+                    : "bg-surface-container-low border-outline-variant hover:bg-surface-container text-on-surface"
+                }`}
+              >
+                <span>{cfg.icon}</span>
+                <span>{cfg.nepali}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Marriage date */}
-      <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">Marriage date</label>
-      <input
-        type="date"
-        value={data.marriageDate ?? ""}
-        onChange={(event) => actions.setMarriageDate(id, event.target.value)}
-        className="w-full px-2 py-1 text-xs rounded-md border bg-background"
-      />
+      <div className="space-y-1">
+        <label className="block text-[10px] uppercase font-bold tracking-wider text-himal">
+          Marriage Date (विवाह मिति)
+        </label>
+        <input
+          type="date"
+          value={data.marriageDate ?? ""}
+          onChange={(event) => actions.setMarriageDate(id, event.target.value)}
+          className="w-full px-2.5 py-1 text-xs rounded-lg border border-outline-variant bg-surface-container-low focus:outline-none focus:border-sindoor font-mono"
+        />
+      </div>
 
-      {/* Divorce date (only when divorced) */}
       {(status === "divorced" || status === "separated") && (
-        <>
-          <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-            {status === "divorced" ? "Divorce date" : "Separation date"}
+        <div className="space-y-1">
+          <label className="block text-[10px] uppercase font-bold tracking-wider text-himal">
+            {status === "divorced" ? "Divorce Date" : "Separation Date"}
           </label>
           <input
             type="date"
             value={data.divorceDate ?? ""}
             onChange={(event) => actions.setDivorceDate(id, event.target.value)}
-            className="w-full px-2 py-1 text-xs rounded-md border bg-background"
+            className="w-full px-2.5 py-1 text-xs rounded-lg border border-outline-variant bg-surface-container-low focus:outline-none focus:border-sindoor font-mono"
           />
-        </>
+        </div>
       )}
 
-      {/* Children actions */}
-      <div className="grid grid-cols-2 gap-1 pt-1">
-        <ToolbarBtn onClick={() => actions.addChild(id)}>+ Child</ToolbarBtn>
-        <ToolbarBtn onClick={() => actions.addChild(id, "adopted")}>+ Adopted</ToolbarBtn>
-        <ToolbarBtn onClick={() => actions.addChild(id, "foster")}>+ Foster</ToolbarBtn>
-        <ToolbarBtn onClick={() => actions.addChild(id, "step")}>+ Step-child</ToolbarBtn>
+      <div className="pt-1 border-t border-outline-variant/50">
+        <label className="block text-[10px] uppercase font-bold tracking-wider text-himal mb-1">
+          Add Children (सन्तान थप्नुहोस्)
+        </label>
+        <div className="grid grid-cols-2 gap-1">
+          <ToolbarBtn onClick={() => actions.addChild(id)}>+ Child (सन्तान)</ToolbarBtn>
+          <ToolbarBtn onClick={() => actions.addChild(id, "adopted")}>+ Adopted (धर्मपुत्र)</ToolbarBtn>
+          <ToolbarBtn onClick={() => actions.addChild(id, "foster")}>+ Foster</ToolbarBtn>
+          <ToolbarBtn onClick={() => actions.addChild(id, "step")}>+ Step-child</ToolbarBtn>
+        </div>
       </div>
 
       <button
+        type="button"
         onClick={() => actions.remove(id)}
-        className="w-full px-2 py-1 text-xs rounded-md border border-destructive text-destructive hover:bg-destructive/10"
+        className="w-full py-1 text-xs rounded-lg border border-error/30 text-error hover:bg-error/10 transition-colors flex items-center justify-center gap-1 font-medium pt-1"
       >
-        Delete
+        <Trash2 className="w-3 h-3" /> Dissolve Union
       </button>
     </div>
   );
 }
 
-/** Heart SVG paths for each bond status */
-function BondHeart({ status, gradId, strokeColor, selected }: { status: BondStatus; gradId: string; strokeColor: string; selected: boolean }) {
-  const strokeW = selected ? 3 : 2;
-  const stroke = selected ? "hsl(var(--ring))" : strokeColor;
-
-  if (status === "divorced") {
-    // Broken heart: two halves with a jagged split
-    return (
-      <svg viewBox="0 0 100 92" className="absolute inset-0 h-full w-full drop-shadow-md">
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="hsl(0 0% 55%)" />
-            <stop offset="100%" stopColor="hsl(0 0% 35%)" />
-          </linearGradient>
-        </defs>
-        {/* Left half */}
-        <path
-          d="M48 28 C46 14 30 10 18 22 C4 36 10 60 48 86 L52 70 L44 52 L52 36 Z"
-          fill={`url(#${gradId})`}
-          stroke={stroke}
-          strokeWidth={strokeW}
-        />
-        {/* Right half — shifted right slightly */}
-        <path
-          d="M52 28 C54 14 70 10 82 22 C96 36 90 60 52 86 L48 70 L56 52 L48 36 Z"
-          fill={`url(#${gradId})`}
-          stroke={stroke}
-          strokeWidth={strokeW}
-        />
-        {/* Jagged crack line */}
-        <path
-          d="M50 28 L52 36 L44 52 L52 70 L50 88"
-          fill="none"
-          stroke="hsl(0 0% 75%)"
-          strokeWidth={1.5}
-          strokeDasharray="2 2"
-        />
-      </svg>
-    );
-  }
-
-  if (status === "separated") {
-    return (
-      <svg viewBox="0 0 100 92" className="absolute inset-0 h-full w-full drop-shadow-md">
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="hsl(40 80% 65%)" />
-            <stop offset="100%" stopColor="hsl(30 70% 45%)" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M50 88 C10 60 4 36 18 22 C30 10 46 14 50 28 C54 14 70 10 82 22 C96 36 90 60 50 88 Z"
-          fill={`url(#${gradId})`}
-          stroke={stroke}
-          strokeWidth={strokeW}
-          opacity={0.6}
-        />
-        {/* Single slash through the heart */}
-        <line x1="35" y1="25" x2="65" y2="75" stroke="hsl(0 0% 90%)" strokeWidth={2.5} />
-      </svg>
-    );
-  }
-
-  if (status === "widowed") {
-    return (
-      <svg viewBox="0 0 100 92" className="absolute inset-0 h-full w-full drop-shadow-md">
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="hsl(0 0% 80%)" />
-            <stop offset="100%" stopColor="hsl(0 0% 60%)" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M50 88 C10 60 4 36 18 22 C30 10 46 14 50 28 C54 14 70 10 82 22 C96 36 90 60 50 88 Z"
-          fill={`url(#${gradId})`}
-          stroke={stroke}
-          strokeWidth={strokeW}
-        />
-      </svg>
-    );
-  }
-
-  // Default: married — full colorful heart
-  return (
-    <svg viewBox="0 0 100 92" className="absolute inset-0 h-full w-full drop-shadow-md">
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={getLoveColor(gradId.replace("loveGrad-", "")).grad1} />
-          <stop offset="100%" stopColor={getLoveColor(gradId.replace("loveGrad-", "")).grad2} />
-        </linearGradient>
-      </defs>
-      <path
-        d="M50 88 C10 60 4 36 18 22 C30 10 46 14 50 28 C54 14 70 10 82 22 C96 36 90 60 50 88 Z"
-        fill={`url(#${gradId})`}
-        stroke={stroke}
-        strokeWidth={strokeW}
-      />
-    </svg>
-  );
-}
-
-const STATUS_ICONS: Record<BondStatus, string> = {
-  married: "💍",
-  divorced: "💔",
-  separated: "⚡",
-  widowed: "🕊️",
-};
-
 export function BondNodeView({ id, data, selected }: NodeProps<FamilyNode>) {
-  const pretty = formatDate(data.marriageDate);
-  const divorcePretty = formatDate(data.divorceDate);
-  const color = getLoveColor(id);
-  const gradId = `loveGrad-${id}`;
+  const prettyMarriage = formatDate(data.marriageDate);
+  const prettyDivorce = formatDate(data.divorceDate);
   const status = data.bondStatus ?? "married";
+  const cfg = STATUS_CONFIG[status];
+  const color = getLoveColor(id);
+  const generation = data.generation ?? 0;
+  const tone = toneFor(generation);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="relative flex flex-col items-center select-none group pb-3">
       <NodeToolbar isVisible={selected} position={Position.Right}>
         <BondToolbar id={id} data={data} />
       </NodeToolbar>
-      <div
-        className={`relative grid place-items-center h-[86px] w-[96px] transition ${
-          selected ? "scale-105" : ""
-        }`}
-      >
-        <BondHeart status={status} gradId={gradId} strokeColor={color.stroke} selected={!!selected} />
-        <div className="relative text-center leading-tight pb-2">
-          <div className="text-lg">{STATUS_ICONS[status]}</div>
-          <div
-            className="text-[10px] font-bold text-white drop-shadow"
-            style={{ fontFamily: "'Kalam', cursive" }}
-          >
-            {STATUS_LABELS[status]}
-          </div>
-        </div>
-      </div>
-      <div
-        className={`-mt-1 px-2 py-0.5 rounded-full border text-[10px] font-medium shadow-sm whitespace-nowrap relative ${
-          status === "divorced" ? "bg-red-50 border-red-200 text-red-700" :
-          status === "separated" ? "bg-amber-50 border-amber-200 text-amber-700" :
-          status === "widowed" ? "bg-gray-50 border-gray-200 text-gray-500" :
-          "bg-card"
-        }`}
-        style={{ fontFamily: "'Kalam', cursive" }}
-      >
-        {status === "divorced" && divorcePretty
-          ? `Div. ${divorcePretty}`
-          : status === "separated" && divorcePretty
-          ? `Sep. ${divorcePretty}`
-          : pretty ?? "Set date"}
-      </div>
       <Handles />
+
+      {/* Heritage Sacred Knot / Union Seal */}
+      <div
+        className={`relative flex items-center justify-center w-14 h-14 rounded-full border-2 transition-all duration-300 shadow-md ${
+          selected
+            ? "scale-110 ring-3 ring-sindoor shadow-xl border-sindoor"
+            : "hover:scale-105 hover:shadow-lg"
+        }`}
+        style={{
+          background: `radial-gradient(circle at 35% 35%, #FFFFFF 0%, ${color.grad1}15 60%, ${color.grad2}25 100%)`,
+          borderColor: color.connector,
+        }}
+      >
+        {/* Sacred union emblem */}
+        <div className="flex flex-col items-center justify-center text-center">
+          <span className="text-xl leading-none filter drop-shadow-xs">{cfg.icon}</span>
+        </div>
+
+        {/* Small dhaka-inspired ring dots */}
+        <div
+          className="absolute inset-0 rounded-full border border-dashed opacity-40 pointer-events-none"
+          style={{ borderColor: color.connector }}
+        />
+      </div>
+
+      {/* Union Badge & Date */}
+      <div
+        className={`-mt-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase shadow-xs flex items-center gap-1 backdrop-blur-xs ${cfg.badgeCls}`}
+      >
+        <span className="font-devanagari">{cfg.nepali}</span>
+        {status === "divorced" && prettyDivorce ? (
+          <span className="font-mono text-[9px] opacity-80">({prettyDivorce})</span>
+        ) : prettyMarriage ? (
+          <span className="font-mono text-[9px] opacity-80">({prettyMarriage.split(" ").pop()})</span>
+        ) : null}
+      </div>
+
+      {/* Descendant Expand/Collapse Button */}
+      <CollapseBtn
+        id={id}
+        isCollapsed={data.isCollapsed}
+        childrenCount={data.childrenCount}
+        tone={tone}
+      />
     </div>
   );
 }
